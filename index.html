@@ -11,14 +11,10 @@
             --text-light: #fdfcf7;
             --text-muted: #a39e93;
             --brand-gold: #9a763e;
-            --whatsapp-green: #25d366;
         }
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             background-color: var(--bg-dark);
-            background-image: radial-gradient(rgba(26, 23, 20, 0.4) 1px, transparent 0), radial-gradient(rgba(26, 23, 20, 0.4) 1px, transparent 0);
-            background-size: 4px 4px;
-            background-position: 0 0, 2px 2px;
             color: var(--text-light);
             line-height: 1.6;
             margin: 0;
@@ -27,18 +23,18 @@
         header {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 1.5rem 2rem;
+            padding: 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #1a1714;
         }
         .logo-img {
-            height: 60px;
+            height: 90px; /* Increased prominence */
             width: auto;
             display: block;
         }
-        .whatsapp-nav-btn {
+        .nav-group { display: flex; gap: 1rem; }
+        .nav-btn {
             background-color: transparent;
             color: var(--brand-gold);
             border: 1px solid var(--brand-gold);
@@ -46,281 +42,83 @@
             border-radius: 2px;
             text-decoration: none;
             font-weight: 500;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            transition: all 0.3s ease;
-        }
-        .whatsapp-nav-btn:hover {
-            background-color: var(--brand-gold);
-            color: var(--bg-dark);
-        }
-        .hero {
-            max-width: 850px;
-            margin: 7rem auto;
-            text-align: center;
-            padding: 0 2rem;
-        }
-        .hero-tag {
-            color: var(--brand-gold);
-            text-transform: uppercase;
-            letter-spacing: 0.35em;
-            font-size: 0.8rem;
-            margin-bottom: 1.5rem;
-            font-weight: 600;
-        }
-        h1 {
-            font-family: Georgia, serif;
-            font-size: 4rem;
-            font-weight: 400;
-            margin: 0 0 1.5rem 0;
-            letter-spacing: -0.01em;
-            line-height: 1.15;
-        }
-        .hero p {
-            font-size: 1.25rem;
-            color: var(--text-muted);
-            max-width: 650px;
-            margin: 0 auto 3rem auto;
-        }
-        .primary-cta {
-            background-color: var(--brand-gold);
-            color: var(--bg-dark);
-            padding: 1.1rem 2.5rem;
-            border-radius: 2px;
-            text-decoration: none;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            font-size: 0.85rem;
-            display: inline-block;
-            box-shadow: 0 4px 30px rgba(154, 118, 62, 0.15);
-            transition: all 0.3s ease;
-        }
-        .primary-cta:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 35px rgba(154, 118, 62, 0.25);
-        }
-        .section-header {
-            text-align: center;
-            margin: 9rem auto 4rem auto;
-            scroll-margin-top: 2rem;
-        }
-        .section-header h2 {
-            font-family: Georgia, serif;
-            font-size: 2.4rem;
-            font-weight: 400;
-            letter-spacing: 0.02em;
-            margin: 0;
-        }
-        .section-header p {
-            color: var(--brand-gold);
-            text-transform: uppercase;
-            letter-spacing: 0.25em;
             font-size: 0.75rem;
-            margin-top: 0.6rem;
-        }
-        .product-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 4rem;
-        }
-        .product-card {
-            background-color: var(--bg-card);
-            border-radius: 0px; 
-            border: 1px solid #1a1714;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .product-card:hover {
-            transform: translateY(-8px);
-            border-color: var(--brand-gold);
-        }
-        .image-container {
-            width: 100%;
-            aspect-ratio: 4 / 5; 
-            background-color: #111;
-            overflow: hidden;
-        }
-        .image-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            transition: transform 0.6s ease;
-        }
-        .product-card:hover .image-container img {
-            transform: scale(1.04);
-        }
-        .product-details {
-            padding: 2.5rem;
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-        .product-details h3 {
-            font-family: Georgia, serif;
-            font-size: 1.7rem;
-            font-weight: 400;
-            margin: 0 0 0.5rem 0;
-        }
-        .product-tagline {
-            color: var(--brand-gold);
-            font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 0.15em;
-            margin-bottom: 1.5rem;
-            font-weight: 500;
-        }
-        .features-list {
-            margin: 0 0 2.5rem 0;
-            padding-left: 1.2rem;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
-        .features-list li {
-            margin-bottom: 0.6rem;
-        }
-        .card-action-btn {
-            background-color: transparent;
-            color: var(--text-light);
-            border: 1px solid #332d27;
-            padding: 1rem;
-            text-decoration: none;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            font-size: 0.8rem;
-            text-align: center;
-            margin-top: auto;
             transition: all 0.3s ease;
         }
-        .card-action-btn:hover {
-            border-color: var(--brand-gold);
-            background-color: var(--brand-gold);
-            color: var(--bg-dark);
+        .nav-btn:hover { background-color: var(--brand-gold); color: var(--bg-dark); }
+        .hero { max-width: 700px; margin: 5rem auto; text-align: center; padding: 0 2rem; }
+        .hero-tag { color: var(--brand-gold); text-transform: uppercase; letter-spacing: 0.3em; font-size: 0.7rem; margin-bottom: 1.5rem; }
+        h1 { font-family: Georgia, serif; font-size: 3.5rem; font-weight: 400; margin: 0 0 1.5rem 0; line-height: 1.1; }
+        .product-grid { 
+            max-width: 1000px; /* Constrained width for elegance */
+            margin: 0 auto; 
+            padding: 0 2rem; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 3rem; 
         }
-        .lookbook-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5rem;
+        .product-card { 
+            background-color: var(--bg-card); 
+            border: 1px solid #1a1714; 
+            display: flex; flex-direction: column; 
         }
-        .lookbook-item {
-            aspect-ratio: 1 / 1;
-            background-color: #111;
-            overflow: hidden;
-            border: 1px solid #1a1714;
+        .image-container { width: 100%; aspect-ratio: 4 / 5; overflow: hidden; background: #111; }
+        .image-container img { width: 100%; height: 100%; object-fit: cover; }
+        .product-details { padding: 2rem; }
+        .product-details h3 { font-family: Georgia, serif; font-size: 1.5rem; margin: 0 0 1rem 0; }
+        .card-action-btn { 
+            display: block; text-align: center; border: 1px solid #332d27; 
+            padding: 0.8rem; color: var(--text-light); text-decoration: none; 
+            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em;
+            transition: 0.3s;
         }
-        .lookbook-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        footer {
-            text-align: center;
-            padding: 5rem 2rem;
-            border-top: 1px solid #1a1714;
-            color: var(--text-muted);
-            font-size: 0.8rem;
-            letter-spacing: 0.08em;
-            margin-top: 5rem;
-        }
-        footer p { margin: 0.5rem 0; }
-        
-        @media (max-width: 768px) {
-            h1 { font-size: 2.8rem; }
-            .hero { margin: 5rem auto; }
-            .product-grid { gap: 3rem; }
-            .section-header { margin: 6rem auto 3rem auto; }
-        }
+        .card-action-btn:hover { border-color: var(--brand-gold); background: var(--brand-gold); color: var(--bg-dark); }
+        .section-header { text-align: center; margin: 6rem auto 3rem auto; }
+        footer { text-align: center; padding: 4rem; border-top: 1px solid #1a1714; color: var(--text-muted); font-size: 0.75rem; }
     </style>
 </head>
 <body>
 
-    <!-- Header Navbar -->
     <header>
-        <img class="logo-img" src="https://i.ibb.co/RpJxw8j4/SAVE-20260702-210312.jpg" alt="House of Anna Official Logo">
-        <a href="https://wa.me" target="_blank" class="whatsapp-nav-btn">WhatsApp Order</a>
+        <img class="logo-img" src="https://i.ibb.co/RpJxw8j4/SAVE-20260702-210312.jpg" alt="House of Anna Logo">
+        <div class="nav-group">
+            <a href="https://www.instagram.com/h_anna.ke" target="_blank" class="nav-btn">Instagram</a>
+            <a href="https://wa.me" class="nav-btn">WhatsApp</a>
+        </div>
     </header>
 
-    <!-- Luxe Hero Landing Section -->
     <section class="hero">
         <div class="hero-tag">High Fashion • East Africa & Global Delivery</div>
-        <h1>Bold Prints. Seamless Support. Effortless Versatility.</h1>
-        <p>Handcrafted couture engineered for absolute statement luxury. Proudly serving clients across East Africa, with express global shipping lines to the USA and China.</p>
-        <a href="#collection" class="primary-cta">Explore Runway Collection</a>
+        <h1>Bold Prints. Seamless Support.</h1>
     </section>
 
-    <!-- Collection Header Definition -->
     <div class="section-header" id="collection">
         <h2>Flagship Innovations</h2>
-        <p>Sourced & Crafted with Excellence</p>
     </div>
     
-    <!-- Main Dynamic Collection Grid -->
     <section class="product-grid">
-        <!-- The Backless Dera -->
         <article class="product-card">
-            <div class="image-container">
-                <img src="https://i.ibb.co/1tpH9dLD/IMG-20260601-182012.jpg" alt="The Backless Dera">
-            </div>
+            <div class="image-container"><img src="https://i.ibb.co/1tpH9dLD/IMG-20260601-182012.jpg" alt="The Backless Dera"></div>
             <div class="product-details">
                 <h3>The Backless Dera</h3>
-                <div class="product-tagline">Unique Swahili Cultured Statement</div>
-                <ul class="features-list">
-                    <li><strong>Built-In Bra Support:</strong> Discrete internal structuring for worry-free styling</li>
-                    <li><strong>Criss-Cross Detailing:</strong> Intricate open crossback geometric accents</li>
-                    <li><strong>Adaptive Free-Size Draping:</strong> Tailored to fit gracefully on all silhouettes</li>
-                    <li><strong>Signature Vibrant Prints:</strong> Exclusively sourced premium cultural motifs</li>
-                </ul>
                 <a href="https://wa.me" class="card-action-btn">Purchase via WhatsApp</a>
             </div>
         </article>
 
-        <!-- The Amara Wrap Pants -->
         <article class="product-card">
-            <div class="image-container">
-                <img src="https://i.ibb.co/tMjhxM12/IMG-20260601-170800.jpg" alt="The Amara Wrap Pants">
-            </div>
+            <!-- Corrected Image Link Below -->
+            <div class="image-container"><img src="https://i.ibb.co/VWC4tYF8/IMG-20260705-155412.jpg" alt="The Amara Wrap Pants"></div>
             <div class="product-details">
                 <h3>The Amara Wrap Pants</h3>
-                <div class="product-tagline">Multi-Way Fluid Wardrobe Essential</div>
-                <ul class="features-list">
-                    <li><strong>Infinite Conversions:</strong> Shifts smoothly from wide-leg pants to a backless dress</li>
-                    <li><strong>Premium Silk Canvas:</strong> Highly polished, ultra-fluid, breathable luxury fabric</li>
-                    <li><strong>Versatile Adjustments:</strong> Custom adaptive free-size waist configurations</li>
-                    <li><strong>Timeless Aesthetic:</strong> Striking pattern curation for day-to-night transitions</li>
-                </ul>
                 <a href="https://wa.me" class="card-action-btn">Purchase via WhatsApp</a>
             </div>
         </article>
     </section>
 
-    <!-- Lookbook Section -->
-    <div class="section-header">
-        <h2>The H.anna Lookbook</h2>
-        <p>Premium Curation & Client Spotlights</p>
-    </div>
-    <section class="lookbook-grid">
-        <div class="lookbook-item"><img src="https://i.ibb.co/G4nXzsgB/IMG-20260601-173615.jpg" alt="Client Spotlight 1"></div>
-        <div class="lookbook-item"><img src="https://i.ibb.co/d0pYr4Ny/IMG-20260705-155412.jpg" alt="Client Spotlight 2"></div>
-        <div class="lookbook-item"><img src="https://i.ibb.co/nS6PVKr/IMG-20260705-155417.jpg" alt="Client Spotlight 3"></div>
-        <div class="lookbook-item"><img src="https://i.ibb.co/p6y5DHNT/IMG-20260601-181642.jpg" alt="Client Spotlight 4"></div>
-    </section>
-
-    <!-- Footer -->
     <footer>
-        <p>Boutique Showroom: Opposite Rubis Petrol Station, Ongata Rongai, Nairobi, Kenya.</p>
-        <p>&copy; 2026 House of Anna. Built for modern global lifestyles.</p>
+        <p>&copy; 2026 House of Anna. Boutique Showroom, Ongata Rongai, Nairobi.</p>
     </footer>
 
 </body>
