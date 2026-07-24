@@ -11,69 +11,97 @@
             --brand-gold: #c5a059;
             --accent: #1a1714;
         }
-        body { font-family: 'Playfair Display', serif; background-color: var(--bg-dark); color: var(--text-light); margin: 0; }
+        body { font-family: 'Playfair Display', serif; background-color: var(--bg-dark); color: var(--text-light); margin: 0; line-height: 1.6; }
         
+        /* Header & Navigation */
         header { padding: 3rem 2rem; text-align: center; border-bottom: 1px solid var(--accent); }
-        .logo { font-size: 2.5rem; letter-spacing: 0.2rem; text-transform: uppercase; margin-bottom: 1.5rem; display: block; color: var(--text-light); text-decoration: none; }
-        
+        .logo-img { height: 80px; width: auto; margin-bottom: 1.5rem; }
+        nav { display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; }
+        nav a { color: var(--brand-gold); text-decoration: none; font-size: 0.8rem; letter-spacing: 0.15rem; text-transform: uppercase; border-bottom: 1px solid transparent; transition: 0.3s; }
+        nav a:hover { border-color: var(--brand-gold); }
+
         /* Unified Grid */
         .gallery-container { padding: 4rem 2rem; max-width: 1100px; margin: 0 auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 4rem; }
         
-        /* Card & Video Styling */
-        .item-card { background: #111; overflow: hidden; }
-        .item-card img, .item-card video { width: 100%; aspect-ratio: 4/5; object-fit: cover; transition: transform 0.5s ease; }
-        .item-card:hover img, .item-card:hover video { transform: scale(1.03); }
+        /* Card Styling */
+        .item-card { background: #111; padding: 10px; border: 1px solid var(--accent); }
+        .item-card img, .item-card video { width: 100%; aspect-ratio: 4/5; object-fit: cover; }
         
-        .content-label { padding: 1rem; text-align: center; font-size: 0.8rem; letter-spacing: 0.1rem; color: var(--brand-gold); }
+        .card-content { padding: 1.5rem 0; text-align: center; }
+        .card-title { font-size: 1rem; margin-bottom: 1rem; color: var(--text-light); }
+        
+        .btn-order { display: block; border: 1px solid var(--brand-gold); padding: 0.8rem; color: var(--brand-gold); text-decoration: none; font-size: 0.75rem; letter-spacing: 0.15rem; text-transform: uppercase; transition: 0.3s; }
+        .btn-order:hover { background: var(--brand-gold); color: var(--bg-dark); }
+        
+        footer { text-align: center; padding: 4rem 2rem; border-top: 1px solid var(--accent); color: #555; font-size: 0.8rem; letter-spacing: 0.1rem; }
     </style>
 </head>
 <body>
 
 <header>
-    <a href="#" class="logo">House of Anna</a>
+    <img src="https://i.ibb.co/RpJxw8j4/SAVE-20260702-210312.jpg" alt="House of Anna Logo" class="logo-img">
+    <nav>
+        <a href="https://www.instagram.com/h_anna.ke" target="_blank">Instagram</a>
+        <a href="https://wa.me/YOUR_PHONE_NUMBER_HERE">WhatsApp</a>
+    </nav>
 </header>
 
 <div class="gallery-container">
+    
     <!-- VIDEO SECTION -->
     <h2 style="text-align: center; margin-bottom: 3rem; font-weight: 300;">In Motion</h2>
     <div class="grid">
+        <!-- Video 1 -->
         <div class="item-card">
-            <video autoplay loop muted playsinline poster="">
-                <source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855732/WhatsApp_Video_2026-07-24_at_4.07.50_AM_1_g5w6qb.mp4" type="video/mp4">
-            </video>
-            <div class="content-label">Amara Wrap Pants</div>
+            <video autoplay loop muted playsinline><source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855732/WhatsApp_Video_2026-07-24_at_4.07.50_AM_1_g5w6qb.mp4" type="video/mp4"></video>
+            <div class="card-content">
+                <div class="card-title">Amara Wrap Pants</div>
+                <a href="https://wa.me/YOUR_PHONE_NUMBER_HERE" class="btn-order">Shop via WhatsApp</a>
+            </div>
         </div>
+        <!-- Video 2 -->
         <div class="item-card">
-            <video autoplay loop muted playsinline poster="">
-                <source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855731/WhatsApp_Video_2026-07-24_at_4.07.07_AM_gncl2b.mp4" type="video/mp4">
-            </video>
-            <div class="content-label">Amara Wrap Pants</div>
+            <video autoplay loop muted playsinline><source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855731/WhatsApp_Video_2026-07-24_at_4.07.07_AM_gncl2b.mp4" type="video/mp4"></video>
+            <div class="card-content">
+                <div class="card-title">Amara Wrap Pants</div>
+                <a href="https://wa.me/YOUR_PHONE_NUMBER_HERE" class="btn-order">Shop via WhatsApp</a>
+            </div>
         </div>
+        <!-- Video 3 -->
         <div class="item-card">
-            <video autoplay loop muted playsinline poster="">
-                <source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855705/WhatsApp_Video_2026-07-24_at_4.07.50_AM_b4guuu.mp4" type="video/mp4">
-            </video>
-            <div class="content-label">Amara Wrap Pants</div>
+            <video autoplay loop muted playsinline><source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855705/WhatsApp_Video_2026-07-24_at_4.07.50_AM_b4guuu.mp4" type="video/mp4"></video>
+            <div class="card-content">
+                <div class="card-title">Amara Wrap Pants</div>
+                <a href="https://wa.me/YOUR_PHONE_NUMBER_HERE" class="btn-order">Shop via WhatsApp</a>
+            </div>
         </div>
+        <!-- Video 4 -->
         <div class="item-card">
-            <video autoplay loop muted playsinline poster="">
-                <source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855682/WhatsApp_Video_2026-07-24_at_4.07.51_AM_jouzzc.mp4" type="video/mp4">
-            </video>
-            <div class="content-label">Backless Dera</div>
+            <video autoplay loop muted playsinline><source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855682/WhatsApp_Video_2026-07-24_at_4.07.51_AM_jouzzc.mp4" type="video/mp4"></video>
+            <div class="card-content">
+                <div class="card-title">Backless Dera</div>
+                <a href="https://wa.me/YOUR_PHONE_NUMBER_HERE" class="btn-order">Shop via WhatsApp</a>
+            </div>
         </div>
     </div>
 
     <!-- PHOTO SECTION -->
-    <h2 style="text-align: center; margin: 4rem auto 3rem auto; font-weight: 300;">Static Collection</h2>
+    <h2 style="text-align: center; margin: 2rem auto 3rem auto; font-weight: 300;">Static Collection</h2>
     <div class="grid">
-        <!-- Add your photo cards here using the same .item-card structure -->
         <div class="item-card">
             <img src="https://i.ibb.co/VWC4tYF8/IMG-20260705-155412.jpg" alt="Product">
-            <div class="content-label">Amara Wrap Pants</div>
+            <div class="card-content">
+                <div class="card-title">Amara Wrap Pants</div>
+                <a href="https://wa.me/YOUR_PHONE_NUMBER_HERE" class="btn-order">Shop via WhatsApp</a>
+            </div>
         </div>
     </div>
 </div>
+
+<footer>
+    <p>&copy; 2026 House of Anna. Boutique Showroom, Ongata Rongai, Nairobi.</p>
+</footer>
 
 </body>
 </html>
