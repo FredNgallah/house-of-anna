@@ -3,123 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>House of Anna | Premium African Prints & Versatile Luxury</title>
+    <title>House of Anna | Luxury Collections</title>
     <style>
         :root {
             --bg-dark: #0a0908;
-            --bg-card: #141210;
             --text-light: #fdfcf7;
-            --text-muted: #a39e93;
-            --brand-gold: #9a763e;
+            --brand-gold: #c5a059;
+            --accent: #1a1714;
         }
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-light);
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .logo-img {
-            height: 90px; /* Increased prominence */
-            width: auto;
-            display: block;
-        }
-        .nav-group { display: flex; gap: 1rem; }
-        .nav-btn {
-            background-color: transparent;
-            color: var(--brand-gold);
-            border: 1px solid var(--brand-gold);
-            padding: 0.6rem 1.2rem;
-            border-radius: 2px;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            transition: all 0.3s ease;
-        }
-        .nav-btn:hover { background-color: var(--brand-gold); color: var(--bg-dark); }
-        .hero { max-width: 700px; margin: 5rem auto; text-align: center; padding: 0 2rem; }
-        .hero-tag { color: var(--brand-gold); text-transform: uppercase; letter-spacing: 0.3em; font-size: 0.7rem; margin-bottom: 1.5rem; }
-        h1 { font-family: Georgia, serif; font-size: 3.5rem; font-weight: 400; margin: 0 0 1.5rem 0; line-height: 1.1; }
-        .product-grid { 
-            max-width: 1000px; /* Constrained width for elegance */
-            margin: 0 auto; 
-            padding: 0 2rem; 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-            gap: 3rem; 
-        }
-        .product-card { 
-            background-color: var(--bg-card); 
-            border: 1px solid #1a1714; 
-            display: flex; flex-direction: column; 
-        }
-        .image-container { width: 100%; aspect-ratio: 4 / 5; overflow: hidden; background: #111; }
-        .image-container img { width: 100%; height: 100%; object-fit: cover; }
-        .product-details { padding: 2rem; }
-        .product-details h3 { font-family: Georgia, serif; font-size: 1.5rem; margin: 0 0 1rem 0; }
-        .card-action-btn { 
-            display: block; text-align: center; border: 1px solid #332d27; 
-            padding: 0.8rem; color: var(--text-light); text-decoration: none; 
-            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em;
-            transition: 0.3s;
-        }
-        .card-action-btn:hover { border-color: var(--brand-gold); background: var(--brand-gold); color: var(--bg-dark); }
-        .section-header { text-align: center; margin: 6rem auto 3rem auto; }
-        footer { text-align: center; padding: 4rem; border-top: 1px solid #1a1714; color: var(--text-muted); font-size: 0.75rem; }
+        body { font-family: 'Playfair Display', serif; background-color: var(--bg-dark); color: var(--text-light); margin: 0; }
+        
+        header { padding: 3rem 2rem; text-align: center; border-bottom: 1px solid var(--accent); }
+        .logo { font-size: 2.5rem; letter-spacing: 0.2rem; text-transform: uppercase; margin-bottom: 1.5rem; display: block; color: var(--text-light); text-decoration: none; }
+        
+        /* Unified Grid */
+        .gallery-container { padding: 4rem 2rem; max-width: 1100px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        
+        /* Card & Video Styling */
+        .item-card { background: #111; overflow: hidden; }
+        .item-card img, .item-card video { width: 100%; aspect-ratio: 4/5; object-fit: cover; transition: transform 0.5s ease; }
+        .item-card:hover img, .item-card:hover video { transform: scale(1.03); }
+        
+        .content-label { padding: 1rem; text-align: center; font-size: 0.8rem; letter-spacing: 0.1rem; color: var(--brand-gold); }
     </style>
 </head>
 <body>
 
-    <header>
-        <img class="logo-img" src="https://i.ibb.co/RpJxw8j4/SAVE-20260702-210312.jpg" alt="House of Anna Logo">
-        <div class="nav-group">
-            <a href="https://www.instagram.com/h_anna.ke" target="_blank" class="nav-btn">Instagram</a>
-            <a href="https://wa.me" class="nav-btn">WhatsApp</a>
+<header>
+    <a href="#" class="logo">House of Anna</a>
+</header>
+
+<div class="gallery-container">
+    <!-- VIDEO SECTION -->
+    <h2 style="text-align: center; margin-bottom: 3rem; font-weight: 300;">In Motion</h2>
+    <div class="grid">
+        <div class="item-card">
+            <video autoplay loop muted playsinline poster="">
+                <source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855732/WhatsApp_Video_2026-07-24_at_4.07.50_AM_1_g5w6qb.mp4" type="video/mp4">
+            </video>
+            <div class="content-label">Amara Wrap Pants</div>
         </div>
-    </header>
-
-    <section class="hero">
-        <div class="hero-tag">High Fashion • East Africa & Global Delivery</div>
-        <h1>Bold Prints. Seamless Support.</h1>
-    </section>
-
-    <div class="section-header" id="collection">
-        <h2>Flagship Innovations</h2>
+        <div class="item-card">
+            <video autoplay loop muted playsinline poster="">
+                <source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855731/WhatsApp_Video_2026-07-24_at_4.07.07_AM_gncl2b.mp4" type="video/mp4">
+            </video>
+            <div class="content-label">Amara Wrap Pants</div>
+        </div>
+        <div class="item-card">
+            <video autoplay loop muted playsinline poster="">
+                <source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855705/WhatsApp_Video_2026-07-24_at_4.07.50_AM_b4guuu.mp4" type="video/mp4">
+            </video>
+            <div class="content-label">Amara Wrap Pants</div>
+        </div>
+        <div class="item-card">
+            <video autoplay loop muted playsinline poster="">
+                <source src="https://res.cloudinary.com/ujv5gsw6/video/upload/v1784855682/WhatsApp_Video_2026-07-24_at_4.07.51_AM_jouzzc.mp4" type="video/mp4">
+            </video>
+            <div class="content-label">Backless Dera</div>
+        </div>
     </div>
-    
-    <section class="product-grid">
-        <article class="product-card">
-            <div class="image-container"><img src="https://i.ibb.co/1tpH9dLD/IMG-20260601-182012.jpg" alt="The Backless Dera"></div>
-            <div class="product-details">
-                <h3>The Backless Dera</h3>
-                <a href="https://wa.me" class="card-action-btn">Purchase via WhatsApp</a>
-            </div>
-        </article>
 
-        <article class="product-card">
-            <!-- Corrected Image Link Below -->
-            <div class="image-container"><img src="https://i.ibb.co/VWC4tYF8/IMG-20260705-155412.jpg" alt="The Amara Wrap Pants"></div>
-            <div class="product-details">
-                <h3>The Amara Wrap Pants</h3>
-                <a href="https://wa.me" class="card-action-btn">Purchase via WhatsApp</a>
-            </div>
-        </article>
-    </section>
-
-    <footer>
-        <p>&copy; 2026 House of Anna. Boutique Showroom, Ongata Rongai, Nairobi.</p>
-    </footer>
+    <!-- PHOTO SECTION -->
+    <h2 style="text-align: center; margin: 4rem auto 3rem auto; font-weight: 300;">Static Collection</h2>
+    <div class="grid">
+        <!-- Add your photo cards here using the same .item-card structure -->
+        <div class="item-card">
+            <img src="https://i.ibb.co/VWC4tYF8/IMG-20260705-155412.jpg" alt="Product">
+            <div class="content-label">Amara Wrap Pants</div>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
