@@ -1347,7 +1347,7 @@ create table if not exists public.inventory (
   cost_price numeric not null default 0,
   selling_price numeric not null default 0,
   margin numeric not null default 0,
-  quantity_stocked integer not null default 1,
+  total_qty_stocked integer not null default 1,
   arrival_date date not null default current_date,
   shelf_location text,
   photo_url text,
@@ -1417,7 +1417,7 @@ using (true);
         cost_price: 1500,
         selling_price: 3500,
         margin: 2000,
-        quantity_stocked: 1,
+        total_qty_stocked: 1,
         arrival_date: '2026-10-18',
         shelf_location: 'Rack A1',
         photo_url: '',
@@ -1433,7 +1433,7 @@ using (true);
         cost_price: 1500,
         selling_price: 3500,
         margin: 2000,
-        quantity_stocked: 1,
+        total_qty_stocked: 1,
         arrival_date: '2026-10-18',
         shelf_location: 'Rack A1',
         photo_url: '',
@@ -1449,7 +1449,7 @@ using (true);
         cost_price: 1800,
         selling_price: 3800,
         margin: 2000,
-        quantity_stocked: 1,
+        total_qty_stocked: 1,
         arrival_date: '2026-10-20',
         shelf_location: 'Shelf B3',
         photo_url: '',
@@ -1465,7 +1465,7 @@ using (true);
         cost_price: 900,
         selling_price: 2600,
         margin: 1700,
-        quantity_stocked: 1,
+        total_qty_stocked: 1,
         arrival_date: '2026-10-21',
         shelf_location: 'Rack T1',
         photo_url: '',
@@ -1481,7 +1481,7 @@ using (true);
         cost_price: 1700,
         selling_price: 3600,
         margin: 1900,
-        quantity_stocked: 1,
+        total_qty_stocked: 1,
         arrival_date: '2026-10-22',
         shelf_location: 'Shelf B1',
         photo_url: '',
@@ -1714,7 +1714,7 @@ using (true);
             </td>
             <td>
               <span style="font-weight: 600; padding: 2px 8px; border-radius: 4px; background: #222;">
-                ${Number(item.quantity_stocked) || 1}
+                ${Number(item.total_qty_stocked) || 1}
               </span>
             </td>
             <td>${escapeHtml(item.arrival_date || '—')}</td>
@@ -1850,7 +1850,7 @@ using (true);
           cost_price: costPrice,
           selling_price: sellingPrice,
           margin: margin,
-          quantity_stocked: 1, // 1 record per unit
+          total_qty_stocked: 1, // 1 record per unit
           arrival_date: arrivalDate,
           shelf_location: shelfLocation || '',
           photo_url: photoBase64 || '',
