@@ -1,0 +1,6 @@
+{
+  "name": "House of Anna - Inventory Management",
+  "description": "Internal inventory management web app for House of Anna fashion boutique in Nairobi, Kenya, connected to Supabase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

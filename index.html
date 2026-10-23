@@ -1,0 +1,2239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>House of Anna — Inventory Management | Nairobi, Kenya</title>
+  <meta name="description" content="Internal inventory management web app for House of Anna fashion boutique in Nairobi, Kenya, connected to Supabase." />
+  <meta property="og:title" content="House of Anna — Inventory Management" />
+  <meta property="og:description" content="Internal inventory management web app for House of Anna fashion boutique in Nairobi, Kenya." />
+  
+  <!-- Google Fonts: Cormorant Garamond & Inter for high-fashion boutique aesthetics -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Supabase JS Client via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* CSS Reset & Variables */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-color: #0f0f0f;
+      --card-bg: #161616;
+      --card-border: #262626;
+      --card-hover: #1c1c1c;
+      --input-bg: #1a1a1a;
+      --input-border: #333333;
+      --pink-accent: #e91e8c;
+      --pink-hover: #d8157e;
+      --pink-glow: rgba(233, 30, 140, 0.25);
+      --pink-subtle: rgba(233, 30, 140, 0.12);
+      --text-white: #ffffff;
+      --text-muted: #9e9e9e;
+      --text-dim: #666666;
+      --status-avail-text: #10b981;
+      --status-avail-bg: rgba(16, 185, 129, 0.15);
+      --status-avail-border: rgba(16, 185, 129, 0.35);
+      --status-sold-text: #ef4444;
+      --status-sold-bg: rgba(239, 68, 68, 0.15);
+      --status-sold-border: rgba(239, 68, 68, 0.35);
+      --font-serif: 'Cormorant Garamond', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-white);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      line-height: 1.5;
+      padding-bottom: 60px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Header */
+    header {
+      border-bottom: 1px solid var(--card-border);
+      background: linear-gradient(180deg, #181818 0%, #0f0f0f 100%);
+      padding: 24px 0 20px 0;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .header-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-eyebrow {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--pink-accent);
+      font-weight: 600;
+    }
+
+    .brand-title {
+      font-family: var(--font-serif);
+      font-size: 2.1rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-white);
+      line-height: 1.1;
+      margin-top: 2px;
+    }
+
+    .brand-tagline {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .connection-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      background: #1e1e1e;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+    }
+
+    .connection-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
+    .connection-dot.online {
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    .connection-dot.demo {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    }
+
+    .btn-secondary {
+      background: #222222;
+      border: 1px solid var(--card-border);
+      color: var(--text-white);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #2a2a2a;
+      border-color: var(--pink-accent);
+    }
+
+    /* Notification Banner */
+    .banner {
+      background: linear-gradient(90deg, rgba(233,30,140,0.12) 0%, rgba(20,20,20,0.9) 100%);
+      border-bottom: 1px solid rgba(233, 30, 140, 0.3);
+      padding: 10px 0;
+      font-size: 0.82rem;
+      color: #e2e8f0;
+    }
+
+    .banner-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .banner a, .banner button.text-btn {
+      color: var(--pink-accent);
+      text-decoration: underline;
+      background: none;
+      border: none;
+      font-size: inherit;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    /* Layout grid: Form + Stats */
+    .dashboard-layout {
+      margin-top: 28px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+
+    @media (min-width: 1024px) {
+      .dashboard-layout {
+        grid-template-columns: 440px 1fr;
+      }
+    }
+
+    /* KPI Cards row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .stat-card:hover {
+      border-color: rgba(233, 30, 140, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: transparent;
+    }
+
+    .stat-card.accent-pink::before { background: var(--pink-accent); }
+    .stat-card.accent-green::before { background: #10b981; }
+    .stat-card.accent-gold::before { background: #f59e0b; }
+    .stat-card.accent-purple::before { background: #a855f7; }
+
+    .stat-label {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: var(--text-white);
+      margin-top: 6px;
+      letter-spacing: -0.5px;
+    }
+
+    .stat-sub {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: rgba(25, 25, 25, 0.6);
+    }
+
+    .card-title {
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title .icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--pink-subtle);
+      color: var(--pink-accent);
+      font-size: 0.95rem;
+      border: 1px solid rgba(233, 30, 140, 0.3);
+    }
+
+    .card-subtitle {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 480px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.75px;
+      color: #d1d5db;
+      margin-bottom: 7px;
+    }
+
+    label .req {
+      color: var(--pink-accent);
+      margin-left: 3px;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+      width: 100%;
+      background-color: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--text-white);
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--pink-accent);
+      box-shadow: 0 0 0 3px var(--pink-glow);
+      background-color: #1e1e1e;
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239e9e9e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      background-size: 16px;
+      cursor: pointer;
+    }
+
+    /* Custom File Input */
+    .photo-upload-zone {
+      border: 2px dashed var(--input-border);
+      border-radius: 12px;
+      padding: 18px;
+      text-align: center;
+      background: #141414;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .photo-upload-zone:hover,
+    .photo-upload-zone.dragover {
+      border-color: var(--pink-accent);
+      background: var(--pink-subtle);
+    }
+
+    .photo-upload-zone input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-icon {
+      font-size: 1.8rem;
+      color: var(--pink-accent);
+      margin-bottom: 6px;
+    }
+
+    .upload-text {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-white);
+    }
+
+    .upload-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .preview-container {
+      display: none;
+      margin-top: 12px;
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      max-height: 160px;
+    }
+
+    .preview-image {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .btn-remove-photo {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+    }
+
+    .btn-remove-photo:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    /* Live Margin Preview Box */
+    .margin-preview-box {
+      background: #121212;
+      border: 1px solid #282828;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+    }
+
+    .margin-preview-box .label {
+      color: var(--text-muted);
+    }
+
+    .margin-preview-box .calc-val {
+      font-weight: 700;
+      color: #10b981;
+    }
+
+    /* Quantity Notice */
+    .quantity-notice {
+      background: rgba(233, 30, 140, 0.08);
+      border-left: 3px solid var(--pink-accent);
+      padding: 8px 12px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.74rem;
+      color: #e2e8f0;
+      margin-top: 6px;
+    }
+
+    /* Submit Button */
+    .btn-primary {
+      width: 100%;
+      background: var(--pink-accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(233, 30, 140, 0.4);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .btn-primary:hover {
+      background: var(--pink-hover);
+      box-shadow: 0 6px 24px rgba(233, 30, 140, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Table Toolbar */
+    .table-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--card-border);
+      background: #181818;
+    }
+
+    .search-filter-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      flex: 1;
+      max-width: 700px;
+    }
+
+    .search-input-box {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    .search-input-box input {
+      padding-left: 36px;
+      height: 38px;
+    }
+
+    .search-input-box::before {
+      content: '🔍';
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8rem;
+      opacity: 0.6;
+    }
+
+    .filter-select {
+      height: 38px;
+      padding: 6px 28px 6px 12px;
+      font-size: 0.8rem;
+      width: auto;
+      min-width: 130px;
+    }
+
+    .table-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Inventory Table */
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.84rem;
+      white-space: nowrap;
+    }
+
+    thead th {
+      background: #141414;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.75px;
+      font-weight: 600;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--card-border);
+      user-select: none;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #202020;
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover {
+      background: rgba(233, 30, 140, 0.04);
+    }
+
+    tbody td {
+      padding: 13px 16px;
+      vertical-align: middle;
+      color: #e5e7eb;
+    }
+
+    .product-id-badge {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--pink-accent);
+      background: rgba(233, 30, 140, 0.12);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(233, 30, 140, 0.25);
+      cursor: pointer;
+    }
+
+    .product-id-badge:hover {
+      background: rgba(233, 30, 140, 0.25);
+    }
+
+    .print-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 260px;
+      white-space: normal;
+    }
+
+    .thumb-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #252525;
+      border: 1px solid var(--card-border);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .thumb-placeholder {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: #222222;
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #777;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .print-title {
+      font-weight: 600;
+      color: var(--text-white);
+      line-height: 1.25;
+      font-size: 0.85rem;
+    }
+
+    .print-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .tag-category {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: #202020;
+      border: 1px solid #303030;
+      color: #d1d5db;
+    }
+
+    .size-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 24px;
+      padding: 0 6px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      background: #252525;
+      color: #fff;
+      border: 1px solid #383838;
+    }
+
+    .price-kes {
+      font-family: var(--font-sans);
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+
+    .margin-positive {
+      font-weight: 700;
+      color: #10b981;
+    }
+
+    .margin-negative {
+      font-weight: 700;
+      color: #ef4444;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+
+    .status-badge.available {
+      color: var(--status-avail-text);
+      background: var(--status-avail-bg);
+      border: 1px solid var(--status-avail-border);
+    }
+
+    .status-badge.available:hover {
+      background: rgba(16, 185, 129, 0.25);
+    }
+
+    .status-badge.sold-out {
+      color: var(--status-sold-text);
+      background: var(--status-sold-bg);
+      border: 1px solid var(--status-sold-border);
+    }
+
+    .status-badge.sold-out:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      opacity: 0.6;
+    }
+
+    .empty-state-title {
+      font-family: var(--font-serif);
+      font-size: 1.4rem;
+      color: var(--text-white);
+      margin-bottom: 6px;
+    }
+
+    /* Modal / Drawer */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-card {
+      background: #181818;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 650px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .btn-close-modal {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .btn-close-modal:hover {
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .code-block {
+      background: #0d0d0d;
+      border: 1px solid #282828;
+      border-radius: 10px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin: 12px 0;
+      line-height: 1.4;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 150;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: #1f1f1f;
+      border-left: 4px solid var(--pink-accent);
+      border-radius: 8px;
+      padding: 14px 18px;
+      color: #fff;
+      font-size: 0.85rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      border: 1px solid #333;
+      border-left-width: 4px;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 280px;
+      max-width: 420px;
+      animation: slideIn 0.25s ease-out;
+    }
+
+    .toast.success { border-left-color: #10b981; }
+    .toast.error { border-left-color: #ef4444; }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Image Lightbox */
+    #imageLightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      cursor: zoom-out;
+    }
+
+    #imageLightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      border: 2px solid var(--pink-accent);
+      box-shadow: 0 0 40px rgba(233, 30, 140, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container header-inner">
+      <div class="brand">
+        <span class="brand-eyebrow">House of Anna • Nairobi</span>
+        <h1 class="brand-title">Inventory Management</h1>
+        <span class="brand-tagline">Boutique Atelier • Stock Control & Unit Tracking</span>
+      </div>
+      <div class="header-actions">
+        <div class="connection-pill" id="connectionStatusPill">
+          <span class="connection-dot demo" id="connectionDot"></span>
+          <span id="connectionStatusText">Checking Supabase...</span>
+        </div>
+        <button type="button" class="btn-secondary" id="openSettingsBtn" aria-label="Database Settings">
+          <span>⚙️ Database Config</span>
+        </button>
+        <button type="button" class="btn-secondary" id="openSqlBtn" aria-label="Supabase SQL Setup">
+          <span>📜 SQL Schema</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Banner for Placeholder / Setup Notice -->
+  <div class="banner" id="configNoticeBanner">
+    <div class="container banner-inner">
+      <div id="bannerMessage">
+        <strong>Supabase Connected:</strong> You are currently using the demo / local fallback store. Add items to test immediately, or configure your live Supabase credentials anytime.
+      </div>
+      <div>
+        <button type="button" class="text-btn" id="bannerActionBtn">Configure Supabase Keys</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="container">
+    <!-- Top Summary Statistics Bar -->
+    <div class="dashboard-layout" style="margin-top: 24px; margin-bottom: -10px;">
+      <div style="grid-column: 1 / -1;">
+        <div class="stats-row">
+          <div class="stat-card accent-pink">
+            <span class="stat-label">Total Stock Units</span>
+            <span class="stat-value" id="statTotalUnits">0</span>
+            <span class="stat-sub" id="statPrintsCount">0 unique prints</span>
+          </div>
+          <div class="stat-card accent-green">
+            <span class="stat-label">Available In Stock</span>
+            <span class="stat-value" id="statAvailableUnits" style="color: #10b981;">0</span>
+            <span class="stat-sub">Ready for purchase</span>
+          </div>
+          <div class="stat-card accent-gold">
+            <span class="stat-label">Sold Out Units</span>
+            <span class="stat-value" id="statSoldUnits" style="color: #ef4444;">0</span>
+            <span class="stat-sub">Units sold</span>
+          </div>
+          <div class="stat-card accent-purple">
+            <span class="stat-label">Inventory Retail Value</span>
+            <span class="stat-value" id="statRetailValue">KES 0</span>
+            <span class="stat-sub" id="statCostValue">Cost: KES 0</span>
+          </div>
+          <div class="stat-card accent-green">
+            <span class="stat-label">Projected Margin</span>
+            <span class="stat-value" id="statTotalMargin">KES 0</span>
+            <span class="stat-sub" id="statMarginPercent">0% avg. markup</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-layout">
+      <!-- SECTION 1: ADD NEW INVENTORY FORM -->
+      <section class="card" aria-labelledby="formHeading">
+        <div class="card-header">
+          <div>
+            <h2 id="formHeading" class="card-title">
+              <span class="icon-badge">✨</span>
+              <span>Add New Inventory</span>
+            </h2>
+            <p class="card-subtitle">Register new boutique prints & generate individual unit IDs</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <form id="inventoryForm" novalidate>
+            
+            <!-- Print Description -->
+            <div class="form-group">
+              <label for="printDescription">
+                Print Description <span class="req">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="printDescription" 
+                name="printDescription" 
+                placeholder="e.g. Royal Blue Ankara Floral Wax Dera" 
+                required 
+                autocomplete="off"
+              />
+            </div>
+
+            <!-- Supplier & Category -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="supplier">Supplier <span class="req">*</span></label>
+                <select id="supplier" name="supplier" required>
+                  <option value="Vivian">Vivian</option>
+                  <option value="Mamake Scola">Mamake Scola</option>
+                  <option value="Mamake Esther">Mamake Esther</option>
+                  <option value="Chelsea">Chelsea</option>
+                  <option value="Irene">Irene</option>
+                  <option value="Thrift (Gikomba)">Thrift (Gikomba)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="category">Category <span class="req">*</span></label>
+                <select id="category" name="category" required>
+                  <option value="Backless Dera">Backless Dera</option>
+                  <option value="Amara Wrap Pants">Amara Wrap Pants</option>
+                  <option value="Thrift">Thrift</option>
+                  <option value="New">New</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Size & Quantity -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="size">Size <span class="req">*</span></label>
+                <select id="size" name="size" required>
+                  <option value="S">S</option>
+                  <option value="M" selected>M</option>
+                  <option value="L">L</option>
+                  <option value="XL">XL</option>
+                  <option value="XXL">XXL</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="quantity">Quantity (Units) <span class="req">*</span></label>
+                <input 
+                  type="number" 
+                  id="quantity" 
+                  name="quantity" 
+                  min="1" 
+                  max="20" 
+                  value="1" 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div class="quantity-notice" id="quantityHelperText">
+              💡 1 unit will be created with a unique Product ID.
+            </div>
+
+            <!-- Cost Price & Selling Price -->
+            <div class="form-row" style="margin-top: 14px;">
+              <div class="form-group">
+                <label for="costPrice">Cost Price (KES) <span class="req">*</span></label>
+                <input 
+                  type="number" 
+                  id="costPrice" 
+                  name="costPrice" 
+                  placeholder="e.g. 1500" 
+                  min="0" 
+                  step="50"
+                  required 
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="sellingPrice">Selling Price (KES) <span class="req">*</span></label>
+                <input 
+                  type="number" 
+                  id="sellingPrice" 
+                  name="sellingPrice" 
+                  placeholder="e.g. 3500" 
+                  min="0" 
+                  step="50"
+                  required 
+                />
+              </div>
+            </div>
+
+            <!-- Margin Preview -->
+            <div class="margin-preview-box">
+              <span class="label">Calculated Margin / Unit:</span>
+              <span class="calc-val" id="liveMarginText">KES 0 (0%)</span>
+            </div>
+
+            <!-- Arrival Date & Shelf Location -->
+            <div class="form-row" style="margin-top: 14px;">
+              <div class="form-group">
+                <label for="arrivalDate">Arrival Date <span class="req">*</span></label>
+                <input 
+                  type="date" 
+                  id="arrivalDate" 
+                  name="arrivalDate" 
+                  required 
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="shelfLocation">Shelf Location</label>
+                <input 
+                  type="text" 
+                  id="shelfLocation" 
+                  name="shelfLocation" 
+                  placeholder="e.g. Rack A2, Middle" 
+                  autocomplete="off"
+                />
+              </div>
+            </div>
+
+            <!-- Photo Upload -->
+            <div class="form-group">
+              <label for="photoFile">Photo Upload</label>
+              <div class="photo-upload-zone" id="dropZone">
+                <input 
+                  type="file" 
+                  id="photoFile" 
+                  name="photoFile" 
+                  accept="image/*" 
+                />
+                <div class="upload-icon">📸</div>
+                <div class="upload-text">Click or drag & drop garment photo here</div>
+                <div class="upload-sub">PNG, JPG, WEBP up to 5MB (shared across all units)</div>
+              </div>
+
+              <div class="preview-container" id="previewContainer">
+                <img id="imagePreview" class="preview-image" alt="Garment preview" />
+                <button type="button" class="btn-remove-photo" id="removePhotoBtn">✕ Remove Photo</button>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn-primary" id="submitBtn">
+              <span class="spinner" id="btnSpinner"></span>
+              <span id="submitBtnText">Add to Inventory</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- SECTION 2: INVENTORY TABLE -->
+      <section class="card" aria-labelledby="tableHeading">
+        <div class="card-header">
+          <div>
+            <h2 id="tableHeading" class="card-title">
+              <span class="icon-badge">👗</span>
+              <span>Current Inventory Stock</span>
+            </h2>
+            <p class="card-subtitle">Real-time units catalog & stock availability</p>
+          </div>
+          <div class="table-actions">
+            <button type="button" class="btn-secondary" id="refreshTableBtn" title="Refresh Table">
+              <span>↻ Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="table-toolbar">
+          <div class="search-filter-group">
+            <div class="search-input-box">
+              <input 
+                type="text" 
+                id="searchTableInput" 
+                placeholder="Search Product ID, Print, Supplier..." 
+                aria-label="Search Inventory"
+              />
+            </div>
+
+            <select id="filterCategory" class="filter-select" aria-label="Filter by Category">
+              <option value="">All Categories</option>
+              <option value="Backless Dera">Backless Dera</option>
+              <option value="Amara Wrap Pants">Amara Wrap Pants</option>
+              <option value="Thrift">Thrift</option>
+              <option value="New">New</option>
+            </select>
+
+            <select id="filterStatus" class="filter-select" aria-label="Filter by Status">
+              <option value="">All Statuses</option>
+              <option value="Available">Available (In Stock)</option>
+              <option value="Sold Out">Sold Out</option>
+            </select>
+          </div>
+          <span style="font-size: 0.78rem; color: var(--text-muted);" id="tableCountDisplay">
+            Showing 0 records
+          </span>
+        </div>
+
+        <!-- Table Responsive Container -->
+        <div class="table-responsive">
+          <table id="inventoryTable">
+            <thead>
+              <tr>
+                <th>Product ID</th>
+                <th>Print Description</th>
+                <th>Supplier</th>
+                <th>Category</th>
+                <th>Size</th>
+                <th>Cost Price</th>
+                <th>Selling Price</th>
+                <th>Margin</th>
+                <th>Quantity Stocked</th>
+                <th>Arrival Date</th>
+                <th>Status</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+              <!-- Dynamically rendered -->
+            </tbody>
+          </table>
+
+          <!-- Empty State -->
+          <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-state-icon">✨</div>
+            <h3 class="empty-state-title">No Inventory Items Found</h3>
+            <p style="font-size: 0.85rem; max-width: 380px; margin: 0 auto;">
+              No records match your filter criteria or the inventory database is empty. Use the form on the left to add your first print!
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Database Settings Modal -->
+  <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="settingsModalTitle">Supabase Database Settings</h3>
+        <button type="button" class="btn-close-modal" id="closeSettingsBtn" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: #a1a1aa; margin-bottom: 16px;">
+          You can edit <code>SUPABASE_URL_HERE</code> and <code>SUPABASE_ANON_KEY_HERE</code> directly inside <code>index.html</code>, or configure them right here in the app interface.
+        </p>
+
+        <form id="settingsForm">
+          <div class="form-group">
+            <label for="customSupabaseUrl">Supabase Project URL</label>
+            <input 
+              type="text" 
+              id="customSupabaseUrl" 
+              placeholder="https://xyzproject.supabase.co" 
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="customSupabaseKey">Supabase Anon Key</label>
+            <input 
+              type="text" 
+              id="customSupabaseKey" 
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." 
+              autocomplete="off"
+            />
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button type="submit" class="btn-primary" style="margin-top: 0; flex: 1;">
+              Save & Reconnect
+            </button>
+            <button type="button" class="btn-secondary" id="resetDemoBtn" style="padding: 12px 16px;">
+              Reset to Demo Data
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- SQL Schema Modal -->
+  <div class="modal-overlay" id="sqlModal" role="dialog" aria-modal="true" aria-labelledby="sqlModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="sqlModalTitle">Supabase SQL Schema Helper</h3>
+        <button type="button" class="btn-close-modal" id="closeSqlBtn" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: #a1a1aa;">
+          Copy and run this SQL script in your Supabase SQL Editor to create the required <code>inventory</code> table with Row Level Security (RLS) configured for House of Anna:
+        </p>
+
+        <pre class="code-block" id="sqlSnippet"><code>-- Create House of Anna inventory table
+create table if not exists public.inventory (
+  id bigint generated by default as identity primary key,
+  product_id text unique not null,
+  print_description text not null,
+  supplier text not null,
+  category text not null,
+  size text not null,
+  cost_price numeric not null default 0,
+  selling_price numeric not null default 0,
+  margin numeric not null default 0,
+  quantity_stocked integer not null default 1,
+  arrival_date date not null default current_date,
+  shelf_location text,
+  photo_url text,
+  status text not null default 'Available',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable Row Level Security (RLS)
+alter table public.inventory enable row level security;
+
+-- Policy to allow read access for all
+create policy "Allow public read access"
+on public.inventory for select
+using (true);
+
+-- Policy to allow insert access for anon users
+create policy "Allow public insert access"
+on public.inventory for insert
+with check (true);
+
+-- Policy to allow update status
+create policy "Allow public update access"
+on public.inventory for update
+using (true);
+</code></pre>
+
+        <button type="button" class="btn-secondary" id="copySqlBtn" style="width: 100%; justify-content: center;">
+          📋 Copy SQL to Clipboard
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox for Image Zoom -->
+  <div id="imageLightbox">
+    <img id="lightboxImg" src="" alt="Enlarged garment" />
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    /**
+     * =========================================================================
+     * SUPABASE CONFIGURATION
+     * Replace these placeholders with your live Supabase project credentials.
+     * =========================================================================
+     */
+    const SUPABASE_URL = 'SUPABASE_URL_HERE';
+    const SUPABASE_ANON_KEY = 'SUPABASE_ANON_KEY_HERE';
+
+    // Application state
+    let supabaseClient = null;
+    let isConnectedToSupabase = false;
+    let inventoryData = [];
+    let photoBase64 = '';
+
+    // Sample initial seed data for House of Anna to ensure the app is immediately usable
+    const DEFAULT_SEED_DATA = [
+      {
+        product_id: 'HOA-INV-001',
+        print_description: 'Floral Ankara Wax Print Dera in Sunset Orange',
+        supplier: 'Vivian',
+        category: 'Backless Dera',
+        size: 'M',
+        cost_price: 1500,
+        selling_price: 3500,
+        margin: 2000,
+        quantity_stocked: 1,
+        arrival_date: '2026-10-18',
+        shelf_location: 'Rack A1',
+        photo_url: '',
+        status: 'Available',
+        created_at: '2026-10-18T10:00:00Z'
+      },
+      {
+        product_id: 'HOA-INV-002',
+        print_description: 'Floral Ankara Wax Print Dera in Sunset Orange',
+        supplier: 'Vivian',
+        category: 'Backless Dera',
+        size: 'M',
+        cost_price: 1500,
+        selling_price: 3500,
+        margin: 2000,
+        quantity_stocked: 1,
+        arrival_date: '2026-10-18',
+        shelf_location: 'Rack A1',
+        photo_url: '',
+        status: 'Sold Out',
+        created_at: '2026-10-18T10:00:00Z'
+      },
+      {
+        product_id: 'HOA-INV-003',
+        print_description: 'Emerald Palm Leaf Amara Wrap Trouser',
+        supplier: 'Chelsea',
+        category: 'Amara Wrap Pants',
+        size: 'L',
+        cost_price: 1800,
+        selling_price: 3800,
+        margin: 2000,
+        quantity_stocked: 1,
+        arrival_date: '2026-10-20',
+        shelf_location: 'Shelf B3',
+        photo_url: '',
+        status: 'Available',
+        created_at: '2026-10-20T11:30:00Z'
+      },
+      {
+        product_id: 'HOA-INV-004',
+        print_description: 'Vintage Silk Slip Dera with Peacock Motif',
+        supplier: 'Thrift (Gikomba)',
+        category: 'Thrift',
+        size: 'S',
+        cost_price: 900,
+        selling_price: 2600,
+        margin: 1700,
+        quantity_stocked: 1,
+        arrival_date: '2026-10-21',
+        shelf_location: 'Rack T1',
+        photo_url: '',
+        status: 'Available',
+        created_at: '2026-10-21T09:15:00Z'
+      },
+      {
+        product_id: 'HOA-INV-005',
+        print_description: 'Minimalist Monochrome Geometric Wrap Pants',
+        supplier: 'Mamake Scola',
+        category: 'Amara Wrap Pants',
+        size: 'XL',
+        cost_price: 1700,
+        selling_price: 3600,
+        margin: 1900,
+        quantity_stocked: 1,
+        arrival_date: '2026-10-22',
+        shelf_location: 'Shelf B1',
+        photo_url: '',
+        status: 'Available',
+        created_at: '2026-10-22T08:00:00Z'
+      }
+    ];
+
+    /**
+     * PURE LOGIC FUNCTIONS
+     */
+    function extractProductIdNumber(productId) {
+      if (!productId || typeof productId !== 'string') return 0;
+      const match = productId.match(/HOA-INV-(\d+)/i) || productId.match(/(\d+)/);
+      if (!match) return 0;
+      const num = parseInt(match[1], 10);
+      return Number.isNaN(num) ? 0 : num;
+    }
+
+    function getHighestProductIdNumber(productIds) {
+      if (!productIds || productIds.length === 0) return 0;
+      let max = 0;
+      for (const id of productIds) {
+        const num = extractProductIdNumber(id);
+        if (num > max) max = num;
+      }
+      return max;
+    }
+
+    function generateNextProductIds(existingProductIds, count) {
+      const currentMax = getHighestProductIdNumber(existingProductIds);
+      const result = [];
+      const safeCount = Math.max(1, Math.min(count, 50));
+      for (let i = 1; i <= safeCount; i++) {
+        const nextNum = currentMax + i;
+        result.push('HOA-INV-' + String(nextNum).padStart(3, '0'));
+      }
+      return result;
+    }
+
+    function calculateMargin(selling, cost) {
+      const s = Number(selling) || 0;
+      const c = Number(cost) || 0;
+      const margin = s - c;
+      const percent = c > 0 ? (margin / c) * 100 : 0;
+      return { margin, percent: Math.round(percent * 10) / 10 };
+    }
+
+    function formatKES(amount) {
+      const n = Number(amount) || 0;
+      return 'KES ' + n.toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    /**
+     * SUPABASE CLIENT INITIALIZATION
+     */
+    function initSupabase() {
+      // Check stored custom credentials or placeholders
+      const storedUrl = localStorage.getItem('HOA_SUPABASE_URL') || '';
+      const storedKey = localStorage.getItem('HOA_SUPABASE_KEY') || '';
+
+      const activeUrl = storedUrl || (SUPABASE_URL !== 'SUPABASE_URL_HERE' ? SUPABASE_URL : '');
+      const activeKey = storedKey || (SUPABASE_ANON_KEY !== 'SUPABASE_ANON_KEY_HERE' ? SUPABASE_ANON_KEY : '');
+
+      const statusDot = document.getElementById('connectionDot');
+      const statusText = document.getElementById('connectionStatusText');
+      const banner = document.getElementById('configNoticeBanner');
+      const bannerMsg = document.getElementById('bannerMessage');
+
+      if (activeUrl && activeKey && window.supabase) {
+        try {
+          supabaseClient = window.supabase.createClient(activeUrl, activeKey);
+          isConnectedToSupabase = true;
+          statusDot.className = 'connection-dot online';
+          statusText.textContent = 'Supabase Connected';
+          banner.style.display = 'none';
+          showToast('Connected to Supabase database', 'success');
+        } catch (err) {
+          console.warn('Supabase initialization failed:', err);
+          supabaseClient = null;
+          isConnectedToSupabase = false;
+          statusDot.className = 'connection-dot demo';
+          statusText.textContent = 'Demo Mode (Local)';
+          banner.style.display = 'block';
+        }
+      } else {
+        supabaseClient = null;
+        isConnectedToSupabase = false;
+        statusDot.className = 'connection-dot demo';
+        statusText.textContent = 'Demo Mode (Offline)';
+        banner.style.display = 'block';
+        bannerMsg.innerHTML = '<strong>Supabase Credentials:</strong> <code>SUPABASE_URL_HERE</code> placeholder is active. Working in Demo Store mode. Data saves locally and all features are fully testable.';
+      }
+
+      // Populate settings form inputs with current values
+      document.getElementById('customSupabaseUrl').value = activeUrl;
+      document.getElementById('customSupabaseKey').value = activeKey;
+    }
+
+    /**
+     * FETCH INVENTORY (SUPABASE OR LOCAL FALLBACK)
+     */
+    async function loadInventory() {
+      const tbody = document.getElementById('inventoryTableBody');
+      const emptyState = document.getElementById('emptyState');
+      const spinner = document.getElementById('refreshTableBtn');
+      if (spinner) spinner.disabled = true;
+
+      try {
+        if (isConnectedToSupabase && supabaseClient) {
+          const { data, error } = await supabaseClient
+            .from('inventory')
+            .select('*')
+            .order('id', { ascending: false });
+
+          if (error) {
+            console.error('Supabase query error:', error);
+            showToast('Supabase table error: ' + error.message + '. Using local copy.', 'error');
+            loadLocalInventory();
+          } else if (data) {
+            inventoryData = data;
+          }
+        } else {
+          loadLocalInventory();
+        }
+      } catch (err) {
+        console.error('Fetch exception:', err);
+        loadLocalInventory();
+      } finally {
+        if (spinner) spinner.disabled = false;
+        renderInventoryTable();
+        updateDashboardStats();
+      }
+    }
+
+    function loadLocalInventory() {
+      const stored = localStorage.getItem('HOA_INVENTORY_LOCAL');
+      if (stored) {
+        try {
+          inventoryData = JSON.parse(stored);
+        } catch (e) {
+          inventoryData = DEFAULT_SEED_DATA;
+        }
+      } else {
+        inventoryData = [...DEFAULT_SEED_DATA];
+        localStorage.setItem('HOA_INVENTORY_LOCAL', JSON.stringify(inventoryData));
+      }
+    }
+
+    function saveLocalInventory() {
+      localStorage.setItem('HOA_INVENTORY_LOCAL', JSON.stringify(inventoryData));
+    }
+
+    /**
+     * RENDER INVENTORY TABLE WITH SEARCH & FILTERS
+     */
+    function renderInventoryTable() {
+      const tbody = document.getElementById('inventoryTableBody');
+      const emptyState = document.getElementById('emptyState');
+      const countDisplay = document.getElementById('tableCountDisplay');
+
+      const searchQuery = (document.getElementById('searchTableInput').value || '').trim().toLowerCase();
+      const categoryFilter = document.getElementById('filterCategory').value;
+      const statusFilter = document.getElementById('filterStatus').value;
+
+      // Filter data
+      const filtered = inventoryData.filter(item => {
+        if (categoryFilter && item.category !== categoryFilter) return false;
+        if (statusFilter && item.status !== statusFilter) return false;
+        if (searchQuery) {
+          const pId = (item.product_id || '').toLowerCase();
+          const desc = (item.print_description || '').toLowerCase();
+          const supp = (item.supplier || '').toLowerCase();
+          const loc = (item.shelf_location || '').toLowerCase();
+          if (!pId.includes(searchQuery) && !desc.includes(searchQuery) && !supp.includes(searchQuery) && !loc.includes(searchQuery)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      countDisplay.textContent = `Showing ${filtered.length} of ${inventoryData.length} records`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      tbody.innerHTML = filtered.map(item => {
+        const marginInfo = calculateMargin(item.selling_price, item.cost_price);
+        const marginClass = marginInfo.margin >= 0 ? 'margin-positive' : 'margin-negative';
+        const marginPrefix = marginInfo.margin >= 0 ? '+' : '';
+        const isAvailable = (item.status === 'Available');
+        const statusBadgeClass = isAvailable ? 'available' : 'sold-out';
+        const statusBadgeText = isAvailable ? '● Available' : '✕ Sold Out';
+
+        const photoHtml = item.photo_url 
+          ? `<img src="${item.photo_url}" class="thumb-img" alt="${escapeHtml(item.print_description)}" onclick="openLightbox('${item.photo_url}')" title="Click to view photo" />`
+          : `<div class="thumb-placeholder" title="No photo">👗</div>`;
+
+        return `
+          <tr data-id="${escapeHtml(item.product_id)}">
+            <td>
+              <span class="product-id-badge" onclick="copyToClipboard('${escapeHtml(item.product_id)}')" title="Click to copy ID">
+                ${escapeHtml(item.product_id)}
+              </span>
+            </td>
+            <td>
+              <div class="print-cell">
+                ${photoHtml}
+                <div>
+                  <div class="print-title">${escapeHtml(item.print_description)}</div>
+                  <div class="print-sub">${item.shelf_location ? '📍 ' + escapeHtml(item.shelf_location) : 'No shelf assigned'}</div>
+                </div>
+              </div>
+            </td>
+            <td><strong>${escapeHtml(item.supplier)}</strong></td>
+            <td><span class="tag-category">${escapeHtml(item.category)}</span></td>
+            <td><span class="size-badge">${escapeHtml(item.size)}</span></td>
+            <td class="price-kes">${formatKES(item.cost_price)}</td>
+            <td class="price-kes">${formatKES(item.selling_price)}</td>
+            <td>
+              <span class="${marginClass}">
+                ${marginPrefix}${formatKES(marginInfo.margin)}
+              </span>
+              <div style="font-size: 0.7rem; color: #888;">${marginInfo.percent}%</div>
+            </td>
+            <td>
+              <span style="font-weight: 600; padding: 2px 8px; border-radius: 4px; background: #222;">
+                ${Number(item.quantity_stocked) || 1}
+              </span>
+            </td>
+            <td>${escapeHtml(item.arrival_date || '—')}</td>
+            <td>
+              <button 
+                type="button" 
+                class="status-badge ${statusBadgeClass}" 
+                onclick="toggleItemStatus('${escapeHtml(item.product_id)}')"
+                title="Click to toggle status"
+              >
+                ${statusBadgeText}
+              </button>
+            </td>
+            <td style="text-align: right;">
+              <button 
+                type="button" 
+                class="btn-secondary" 
+                style="padding: 4px 8px; font-size: 0.72rem; color: #ef4444; border-color: rgba(239,68,68,0.3);"
+                onclick="deleteItem('${escapeHtml(item.product_id)}')"
+                title="Remove unit"
+              >
+                ✕ Delete
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    /**
+     * UPDATE KPI DASHBOARD SUMMARY
+     */
+    function updateDashboardStats() {
+      const totalUnits = inventoryData.length;
+      const availableUnits = inventoryData.filter(i => i.status === 'Available').length;
+      const soldUnits = totalUnits - availableUnits;
+
+      // Unique prints
+      const uniquePrints = new Set(inventoryData.map(i => (i.print_description || '').toLowerCase())).size;
+
+      let totalRetail = 0;
+      let totalCost = 0;
+      let totalMargin = 0;
+
+      for (const item of inventoryData) {
+        if (item.status === 'Available') {
+          const cost = Number(item.cost_price) || 0;
+          const selling = Number(item.selling_price) || 0;
+          totalRetail += selling;
+          totalCost += cost;
+          totalMargin += (selling - cost);
+        }
+      }
+
+      const markupPercent = totalCost > 0 ? Math.round((totalMargin / totalCost) * 100) : 0;
+
+      document.getElementById('statTotalUnits').textContent = totalUnits;
+      document.getElementById('statPrintsCount').textContent = `${uniquePrints} unique prints`;
+      document.getElementById('statAvailableUnits').textContent = availableUnits;
+      document.getElementById('statSoldUnits').textContent = soldUnits;
+      document.getElementById('statRetailValue').textContent = formatKES(totalRetail);
+      document.getElementById('statCostValue').textContent = `Cost: ${formatKES(totalCost)}`;
+      document.getElementById('statTotalMargin').textContent = formatKES(totalMargin);
+      document.getElementById('statMarginPercent').textContent = `${markupPercent}% avg. markup on stock`;
+    }
+
+    /**
+     * FORM SUBMISSION & UNIT GENERATION
+     */
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const form = document.getElementById('inventoryForm');
+      const submitBtn = document.getElementById('submitBtn');
+      const submitBtnText = document.getElementById('submitBtnText');
+      const spinner = document.getElementById('btnSpinner');
+
+      const printDesc = document.getElementById('printDescription').value.trim();
+      const supplier = document.getElementById('supplier').value;
+      const category = document.getElementById('category').value;
+      const size = document.getElementById('size').value;
+      const costPrice = parseFloat(document.getElementById('costPrice').value);
+      const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
+      const quantity = parseInt(document.getElementById('quantity').value, 10) || 1;
+      const arrivalDate = document.getElementById('arrivalDate').value;
+      const shelfLocation = document.getElementById('shelfLocation').value.trim();
+
+      // Form validation
+      if (!printDesc) {
+        showToast('Please enter a Print Description', 'error');
+        document.getElementById('printDescription').focus();
+        return;
+      }
+      if (Number.isNaN(costPrice) || costPrice < 0) {
+        showToast('Please enter a valid Cost Price', 'error');
+        document.getElementById('costPrice').focus();
+        return;
+      }
+      if (Number.isNaN(sellingPrice) || sellingPrice < 0) {
+        showToast('Please enter a valid Selling Price', 'error');
+        document.getElementById('sellingPrice').focus();
+        return;
+      }
+      if (quantity < 1 || quantity > 20) {
+        showToast('Quantity must be between 1 and 20 units', 'error');
+        document.getElementById('quantity').focus();
+        return;
+      }
+      if (!arrivalDate) {
+        showToast('Please select an Arrival Date', 'error');
+        document.getElementById('arrivalDate').focus();
+        return;
+      }
+
+      // Start submission loading state
+      submitBtn.disabled = true;
+      spinner.style.display = 'inline-block';
+      submitBtnText.textContent = `Adding ${quantity} unit${quantity > 1 ? 's' : ''}...`;
+
+      try {
+        // Collect all existing product IDs to compute auto-increment
+        const existingIds = inventoryData.map(i => i.product_id);
+        const newProductIds = generateNextProductIds(existingIds, quantity);
+        const margin = sellingPrice - costPrice;
+
+        // Construct 1 database record per unit
+        const newRecords = newProductIds.map(productId => ({
+          product_id: productId,
+          print_description: printDesc,
+          supplier: supplier,
+          category: category,
+          size: size,
+          cost_price: costPrice,
+          selling_price: sellingPrice,
+          margin: margin,
+          quantity_stocked: 1, // 1 record per unit
+          arrival_date: arrivalDate,
+          shelf_location: shelfLocation || '',
+          photo_url: photoBase64 || '',
+          status: 'Available',
+          created_at: new Date().toISOString()
+        }));
+
+        if (isConnectedToSupabase && supabaseClient) {
+          // Attempt insert into Supabase
+          const { error } = await supabaseClient
+            .from('inventory')
+            .insert(newRecords);
+
+          if (error) {
+            console.error('Supabase insert failed:', error);
+            showToast('Supabase insert error: ' + error.message + '. Saving locally.', 'error');
+            // Fallback to local
+            inventoryData = [...newRecords, ...inventoryData];
+            saveLocalInventory();
+          } else {
+            showToast(`Inserted ${quantity} record(s) to Supabase (${newProductIds[0]} - ${newProductIds[newProductIds.length - 1]})`, 'success');
+            // Refresh from Supabase
+            await loadInventory();
+          }
+        } else {
+          // Local storage fallback
+          inventoryData = [...newRecords, ...inventoryData];
+          saveLocalInventory();
+          showToast(`Added ${quantity} unit(s): ${newProductIds.join(', ')}`, 'success');
+        }
+
+        // Reset form inputs except supplier/category/arrival date for rapid batching
+        document.getElementById('printDescription').value = '';
+        document.getElementById('costPrice').value = '';
+        document.getElementById('sellingPrice').value = '';
+        document.getElementById('shelfLocation').value = '';
+        document.getElementById('quantity').value = '1';
+        clearPhoto();
+        updateMarginPreview();
+        updateQuantityHelper();
+
+        // Refresh table and stats
+        renderInventoryTable();
+        updateDashboardStats();
+
+      } catch (err) {
+        console.error('Error adding inventory:', err);
+        showToast('Error adding inventory: ' + err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        spinner.style.display = 'none';
+        submitBtnText.textContent = 'Add to Inventory';
+      }
+    }
+
+    /**
+     * TOGGLE ITEM STATUS (AVAILABLE <-> SOLD OUT)
+     */
+    async function toggleItemStatus(productId) {
+      const item = inventoryData.find(i => i.product_id === productId);
+      if (!item) return;
+
+      const nextStatus = item.status === 'Available' ? 'Sold Out' : 'Available';
+      const prevStatus = item.status;
+      item.status = nextStatus;
+
+      // Update UI immediately (optimistic update)
+      renderInventoryTable();
+      updateDashboardStats();
+
+      if (isConnectedToSupabase && supabaseClient) {
+        const { error } = await supabaseClient
+          .from('inventory')
+          .update({ status: nextStatus })
+          .eq('product_id', productId);
+
+        if (error) {
+          console.error('Status update error:', error);
+          showToast('Could not update status in Supabase: ' + error.message, 'error');
+          item.status = prevStatus;
+          renderInventoryTable();
+          updateDashboardStats();
+          return;
+        }
+      } else {
+        saveLocalInventory();
+      }
+
+      showToast(`${productId} marked as ${nextStatus}`, 'success');
+    }
+
+    /**
+     * DELETE SINGLE ITEM
+     */
+    async function deleteItem(productId) {
+      if (!confirm(`Are you sure you want to remove unit ${productId}?`)) return;
+
+      if (isConnectedToSupabase && supabaseClient) {
+        const { error } = await supabaseClient
+          .from('inventory')
+          .delete()
+          .eq('product_id', productId);
+
+        if (error) {
+          showToast('Failed to delete from Supabase: ' + error.message, 'error');
+          return;
+        }
+      }
+
+      inventoryData = inventoryData.filter(i => i.product_id !== productId);
+      saveLocalInventory();
+      renderInventoryTable();
+      updateDashboardStats();
+      showToast(`Removed unit ${productId}`, 'success');
+    }
+
+    /**
+     * PHOTO UPLOAD & PREVIEW
+     */
+    function handlePhotoSelected(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('Please select a valid image file', 'error');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image is larger than 5MB. Please choose a smaller photo.', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        // Compress/resize image with HTML canvas to keep payload small & fast
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxDim = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          photoBase64 = canvas.toDataURL('image/jpeg', 0.82);
+
+          // Show preview
+          const previewImg = document.getElementById('imagePreview');
+          const container = document.getElementById('previewContainer');
+          previewImg.src = photoBase64;
+          container.style.display = 'block';
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearPhoto() {
+      photoBase64 = '';
+      const input = document.getElementById('photoFile');
+      if (input) input.value = '';
+      const container = document.getElementById('previewContainer');
+      if (container) container.style.display = 'none';
+      const previewImg = document.getElementById('imagePreview');
+      if (previewImg) previewImg.src = '';
+    }
+
+    /**
+     * LIVE MARGIN & QUANTITY HELPERS
+     */
+    function updateMarginPreview() {
+      const cost = parseFloat(document.getElementById('costPrice').value) || 0;
+      const selling = parseFloat(document.getElementById('sellingPrice').value) || 0;
+      const res = calculateMargin(selling, cost);
+      const textElem = document.getElementById('liveMarginText');
+
+      if (cost > 0 || selling > 0) {
+        const sign = res.margin >= 0 ? '+' : '';
+        textElem.textContent = `${sign}${formatKES(res.margin)} (${res.percent}%)`;
+        textElem.style.color = res.margin >= 0 ? '#10b981' : '#ef4444';
+      } else {
+        textElem.textContent = 'KES 0 (0%)';
+        textElem.style.color = '#10b981';
+      }
+    }
+
+    function updateQuantityHelper() {
+      const qty = parseInt(document.getElementById('quantity').value, 10) || 1;
+      const helper = document.getElementById('quantityHelperText');
+      const existingIds = inventoryData.map(i => i.product_id);
+      const sampleNext = generateNextProductIds(existingIds, qty);
+
+      if (qty === 1) {
+        helper.innerHTML = `💡 1 unit will be created: <strong>${sampleNext[0]}</strong>.`;
+      } else {
+        helper.innerHTML = `💡 <strong>${qty} separate units</strong> will be created: <strong>${sampleNext[0]}</strong> to <strong>${sampleNext[sampleNext.length - 1]}</strong>.`;
+      }
+    }
+
+    /**
+     * TOAST SYSTEM
+     */
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      const icon = type === 'success' ? '✓' : (type === 'error' ? '⚠' : 'ℹ');
+      toast.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">${icon}</span> <span>${escapeHtml(message)}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(`Copied "${text}" to clipboard`, 'success');
+      }).catch(() => {
+        showToast(`Product ID: ${text}`, 'info');
+      });
+    }
+
+    /**
+     * LIGHTBOX FOR IMAGES
+     */
+    function openLightbox(url) {
+      if (!url) return;
+      const lightbox = document.getElementById('imageLightbox');
+      const img = document.getElementById('lightboxImg');
+      img.src = url;
+      lightbox.style.display = 'flex';
+    }
+
+    /**
+     * INITIALIZATION & EVENT LISTENERS
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+      // Default arrival date to today
+      const today = new Date().toISOString().split('T')[0];
+      const arrivalInput = document.getElementById('arrivalDate');
+      if (arrivalInput) arrivalInput.value = today;
+
+      // Initialize Supabase & load data
+      initSupabase();
+      loadInventory();
+
+      // Form listeners
+      const form = document.getElementById('inventoryForm');
+      form.addEventListener('submit', handleFormSubmit);
+
+      document.getElementById('costPrice').addEventListener('input', updateMarginPreview);
+      document.getElementById('sellingPrice').addEventListener('input', updateMarginPreview);
+      document.getElementById('quantity').addEventListener('input', updateQuantityHelper);
+
+      // Photo upload events
+      const photoInput = document.getElementById('photoFile');
+      photoInput.addEventListener('change', handlePhotoSelected);
+      document.getElementById('removePhotoBtn').addEventListener('click', clearPhoto);
+
+      // Drag & drop photo upload
+      const dropZone = document.getElementById('dropZone');
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.add('dragover');
+        });
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.remove('dragover');
+        });
+      });
+      dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+          photoInput.files = files;
+          handlePhotoSelected({ target: { files } });
+        }
+      });
+
+      // Filter & Search events
+      document.getElementById('searchTableInput').addEventListener('input', renderInventoryTable);
+      document.getElementById('filterCategory').addEventListener('change', renderInventoryTable);
+      document.getElementById('filterStatus').addEventListener('change', renderInventoryTable);
+      document.getElementById('refreshTableBtn').addEventListener('click', loadInventory);
+
+      // Settings Modal
+      const settingsModal = document.getElementById('settingsModal');
+      const openSettingsBtn = document.getElementById('openSettingsBtn');
+      const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+      const bannerActionBtn = document.getElementById('bannerActionBtn');
+
+      const openSettings = () => settingsModal.style.display = 'flex';
+      const closeSettings = () => settingsModal.style.display = 'none';
+
+      openSettingsBtn.addEventListener('click', openSettings);
+      bannerActionBtn.addEventListener('click', openSettings);
+      closeSettingsBtn.addEventListener('click', closeSettings);
+
+      document.getElementById('settingsForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const url = document.getElementById('customSupabaseUrl').value.trim();
+        const key = document.getElementById('customSupabaseKey').value.trim();
+        if (url) localStorage.setItem('HOA_SUPABASE_URL', url);
+        else localStorage.removeItem('HOA_SUPABASE_URL');
+        if (key) localStorage.setItem('HOA_SUPABASE_KEY', key);
+        else localStorage.removeItem('HOA_SUPABASE_KEY');
+        closeSettings();
+        initSupabase();
+        loadInventory();
+      });
+
+      document.getElementById('resetDemoBtn').addEventListener('click', () => {
+        if (confirm('Reset inventory database to sample House of Anna stock?')) {
+          localStorage.removeItem('HOA_SUPABASE_URL');
+          localStorage.removeItem('HOA_SUPABASE_KEY');
+          inventoryData = [...DEFAULT_SEED_DATA];
+          saveLocalInventory();
+          closeSettings();
+          initSupabase();
+          renderInventoryTable();
+          updateDashboardStats();
+          showToast('Reset to House of Anna demo stock', 'success');
+        }
+      });
+
+      // SQL Schema Modal
+      const sqlModal = document.getElementById('sqlModal');
+      const openSqlBtn = document.getElementById('openSqlBtn');
+      const closeSqlBtn = document.getElementById('closeSqlBtn');
+      const copySqlBtn = document.getElementById('copySqlBtn');
+
+      openSqlBtn.addEventListener('click', () => sqlModal.style.display = 'flex');
+      closeSqlBtn.addEventListener('click', () => sqlModal.style.display = 'none');
+      copySqlBtn.addEventListener('click', () => {
+        const snippet = document.getElementById('sqlSnippet').innerText;
+        navigator.clipboard.writeText(snippet).then(() => {
+          copySqlBtn.textContent = '✓ Copied to Clipboard!';
+          setTimeout(() => copySqlBtn.textContent = '📋 Copy SQL to Clipboard', 2000);
+        });
+      });
+
+      // Close modal on background click
+      [settingsModal, sqlModal].forEach(modal => {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.style.display = 'none';
+        });
+      });
+
+      // Lightbox close
+      document.getElementById('imageLightbox').addEventListener('click', () => {
+        document.getElementById('imageLightbox').style.display = 'none';
+      });
+
+      updateMarginPreview();
+      updateQuantityHelper();
+    });
+  </script>
+</body>
+</html>
