@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>House of Anna — Executive Dashboard | Nairobi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --card: #141414;
+      --card2: #1a1a1a;
+      --border: #242424;
+      --border2: #2e2e2e;
+      --pink: #e91e8c;
+      --pink-hover: #d8157e;
+      --pink-glow: rgba(233,30,140,0.2);
+      --pink-sub: rgba(233,30,140,0.10);
+      --green: #10b981;
+      --green-sub: rgba(16,185,129,0.12);
+      --red: #ef4444;
+      --red-sub: rgba(239,68,68,0.12);
+      --gold: #f59e0b;
+      --gold-sub: rgba(245,158,11,0.12);
+      --cyan: #06b6d4;
+      --cyan-sub: rgba(6,182,212,0.12);
+      --purple: #8b5cf6;
+      --purple-sub: rgba(139,92,246,0.12);
+      --text: #f5f5f5;
+      --muted: #9e9e9e;
+      --dim: #555;
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(180deg,#181818 0%,#0f0f0f 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0 16px;
+      position: sticky; top: 0; z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+    .header-inner {
+      max-width: 1440px; margin: 0 auto; padding: 0 28px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .brand-block { display: flex; flex-direction: column; gap: 2px; }
+    .brand-eyebrow {
+      font-size: 10px; letter-spacing: 0.18em; color: var(--pink);
+      text-transform: uppercase; font-weight: 600;
+    }
+    .brand-title {
+      font-family: var(--serif); font-size: 22px; font-weight: 700;
+      color: var(--text); letter-spacing: 0.02em; line-height: 1.1;
+    }
+    .brand-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.04em; }
+    .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .conn-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      padding: 5px 12px; border-radius: 20px; border: 1px solid;
+    }
+    .conn-badge.green { color: var(--green); border-color: rgba(16,185,129,.3); background: var(--green-sub); }
+    .conn-badge.red { color: var(--red); border-color: rgba(239,68,68,.3); background: var(--red-sub); }
+    .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .nav-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--sans); font-size: 12px; font-weight: 600;
+      padding: 7px 14px; border-radius: 8px; border: 1px solid;
+      cursor: pointer; text-decoration: none; transition: all .2s;
+    }
+    .nav-btn-inv {
+      color: var(--text); border-color: var(--border2); background: var(--card2);
+    }
+    .nav-btn-inv:hover { border-color: var(--pink); color: var(--pink); }
+    .nav-btn-pos {
+      color: var(--pink); border-color: rgba(233,30,140,.4); background: var(--pink-sub);
+    }
+    .nav-btn-pos:hover { background: var(--pink); color: #fff; }
+    .refresh-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border2);
+      background: var(--card); cursor: pointer; transition: all .2s;
+    }
+    .refresh-btn:hover { color: var(--text); border-color: var(--border2); }
+    #lastUpdated { font-size: 10px; color: var(--dim); white-space: nowrap; }
+
+    /* ── PERIOD TABS ── */
+    .period-bar {
+      max-width: 1440px; margin: 0 auto; padding: 20px 28px 0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .period-tab {
+      font-size: 12px; font-weight: 600; padding: 7px 18px;
+      border-radius: 20px; border: 1px solid var(--border2);
+      background: var(--card); color: var(--muted);
+      cursor: pointer; transition: all .2s; letter-spacing: 0.04em;
+    }
+    .period-tab.active {
+      background: var(--pink); border-color: var(--pink); color: #fff;
+    }
+    .period-tab:hover:not(.active) { color: var(--text); border-color: var(--border2); }
+
+    /* ── MAIN CONTAINER ── */
+    .dash { max-width: 1440px; margin: 0 auto; padding: 24px 28px; }
+
+    /* ── KPI CARDS ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px; margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 20px;
+      display: flex; flex-direction: column; gap: 6px;
+      transition: border-color .2s;
+    }
+    .kpi-card:hover { border-color: var(--border2); }
+    .kpi-label {
+      font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); font-weight: 600;
+    }
+    .kpi-value {
+      font-family: var(--serif); font-size: 26px; font-weight: 700;
+      line-height: 1; color: var(--text);
+    }
+    .kpi-value.pink { color: var(--pink); }
+    .kpi-value.green { color: var(--green); }
+    .kpi-value.gold { color: var(--gold); }
+    .kpi-value.red { color: var(--red); }
+    .kpi-value.cyan { color: var(--cyan); }
+    .kpi-sub { font-size: 11px; color: var(--muted); }
+    .kpi-accent-bar {
+      height: 2px; border-radius: 2px; margin-top: 4px;
+      background: var(--border);
+    }
+    .kpi-accent-bar.pink { background: var(--pink); opacity: .6; }
+    .kpi-accent-bar.green { background: var(--green); opacity: .6; }
+    .kpi-accent-bar.gold { background: var(--gold); opacity: .6; }
+    .kpi-accent-bar.cyan { background: var(--cyan); opacity: .6; }
+    .kpi-accent-bar.red { background: var(--red); opacity: .6; }
+
+    /* ── SECTION HEADING ── */
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: var(--serif); font-size: 18px; font-weight: 600;
+      color: var(--text); letter-spacing: 0.02em;
+    }
+    .section-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── CHART GRID ── */
+    .chart-row { display: grid; gap: 16px; margin-bottom: 16px; }
+    .chart-row-2 { grid-template-columns: 2fr 1fr; }
+    .chart-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .chart-row-2b { grid-template-columns: 1fr 1fr; }
+
+    .chart-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+    }
+    .chart-wrap { position: relative; width: 100%; }
+    .chart-wrap canvas { width: 100% !important; }
+
+    /* ── ACTION CENTRE ── */
+    .action-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+      margin-bottom: 28px;
+    }
+    .alert-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+    }
+    .alert-title {
+      font-family: var(--serif); font-size: 16px; font-weight: 600;
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .alert-badge {
+      font-size: 11px; font-weight: 700; padding: 2px 8px;
+      border-radius: 10px; font-family: var(--sans);
+    }
+    .alert-badge.red { background: var(--red-sub); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+    .alert-badge.gold { background: var(--gold-sub); color: var(--gold); border: 1px solid rgba(245,158,11,.3); }
+    .alert-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .alert-table th {
+      text-align: left; padding: 6px 10px; color: var(--muted);
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      border-bottom: 1px solid var(--border); font-weight: 600;
+    }
+    .alert-table td {
+      padding: 9px 10px; border-bottom: 1px solid var(--border);
+      color: var(--text); vertical-align: middle;
+    }
+    .alert-table tr:last-child td { border-bottom: none; }
+    .alert-table tr:hover td { background: rgba(255,255,255,.02); }
+    .qty-pill {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 700;
+    }
+    .qty-pill.red { background: var(--red-sub); color: var(--red); }
+    .qty-pill.gold { background: var(--gold-sub); color: var(--gold); }
+    .qty-pill.zero { background: rgba(239,68,68,.2); color: var(--red); }
+    .empty-state { color: var(--muted); font-size: 13px; text-align: center; padding: 24px 0; }
+
+    /* ── SALES LEDGER ── */
+    .ledger-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px; margin-bottom: 28px;
+      overflow-x: auto;
+    }
+    .ledger-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 800px; }
+    .ledger-table th {
+      text-align: left; padding: 8px 12px; color: var(--muted);
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      border-bottom: 1px solid var(--border); font-weight: 600; white-space: nowrap;
+    }
+    .ledger-table td {
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+      color: var(--text); vertical-align: middle;
+    }
+    .ledger-table tr:last-child td { border-bottom: none; }
+    .ledger-table tr:hover td { background: rgba(255,255,255,.02); }
+    .inv-tag {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+      padding: 3px 8px; border-radius: 6px;
+      background: var(--pink-sub); color: var(--pink);
+      border: 1px solid rgba(233,30,140,.25);
+    }
+    .pay-tag {
+      font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px;
+    }
+    .pay-tag.mpesa { background: var(--green-sub); color: var(--green); }
+    .pay-tag.cash { background: var(--gold-sub); color: var(--gold); }
+    .profit-pos { color: var(--green); font-weight: 600; }
+    .profit-neg { color: var(--red); font-weight: 600; }
+
+    /* ── SALESPERSON LEADERBOARD ── */
+    .leader-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .leader-rank {
+      width: 24px; height: 24px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      background: var(--border); color: var(--muted); flex-shrink: 0;
+    }
+    .leader-rank.gold { background: var(--gold-sub); color: var(--gold); }
+    .leader-rank.silver { background: rgba(156,163,175,.15); color: #9ca3af; }
+    .leader-rank.bronze { background: rgba(180,120,60,.15); color: #b4783c; }
+    .leader-info { flex: 1; min-width: 0; }
+    .leader-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .leader-bar-wrap { background: var(--border); border-radius: 4px; height: 4px; margin-top: 4px; }
+    .leader-bar { height: 4px; border-radius: 4px; background: var(--pink); }
+    .leader-amt { font-family: var(--serif); font-size: 15px; font-weight: 700; color: var(--pink); white-space: nowrap; }
+
+    /* ── LOADER ── */
+    .loader-overlay {
+      position: fixed; inset: 0; background: rgba(10,10,10,.85);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 999; gap: 16px;
+    }
+    .loader-spinner {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 2px solid var(--border2);
+      border-top-color: var(--pink);
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text { font-size: 13px; color: var(--muted); }
+    .loader-overlay.hidden { display: none; }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width: 900px) {
+      .chart-row-2, .chart-row-3, .chart-row-2b, .action-grid {
+        grid-template-columns: 1fr;
+      }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media(max-width: 600px) {
+      .header-inner { flex-direction: column; align-items: flex-start; }
+      .kpi-grid { grid-template-columns: 1fr 1fr; }
+      .dash { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loader -->
+<div class="loader-overlay" id="loaderOverlay">
+  <div class="loader-spinner"></div>
+  <div class="loader-text">Loading dashboard data…</div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="header-inner">
+    <div class="brand-block">
+      <span class="brand-eyebrow">House of Anna • Nairobi</span>
+      <span class="brand-title">Executive Dashboard</span>
+      <span class="brand-sub">Live figures from Supabase — Inventory & Sales</span>
+    </div>
+    <div class="header-actions">
+      <span class="conn-badge green" id="connBadge">
+        <span class="conn-dot"></span>
+        <span id="connText">Connecting…</span>
+      </span>
+      <a href="/index.html" class="nav-btn nav-btn-inv">📦 Inventory</a>
+      <a href="/pos.html" class="nav-btn nav-btn-pos">💳 POS Terminal</a>
+      <button class="refresh-btn" id="btnRefresh" onclick="loadAll()">⟳ Refresh</button>
+      <span id="lastUpdated"></span>
+    </div>
+  </div>
+</header>
+
+<!-- Period Tabs -->
+<div class="period-bar">
+  <button class="period-tab active" data-period="today" onclick="setPeriod('today')">Today</button>
+  <button class="period-tab" data-period="week" onclick="setPeriod('week')">This Week</button>
+  <button class="period-tab" data-period="month" onclick="setPeriod('month')">This Month</button>
+  <button class="period-tab" data-period="ytd" onclick="setPeriod('ytd')">YTD</button>
+  <button class="period-tab" data-period="all" onclick="setPeriod('all')">All Time</button>
+</div>
+
+<!-- Main Dashboard -->
+<div class="dash">
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card"><div class="kpi-label">Revenue</div><div class="kpi-value pink" id="kpiRevenue">—</div><div class="kpi-sub" id="kpiRevenueSub">Loading…</div><div class="kpi-accent-bar pink"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Gross Profit</div><div class="kpi-value green" id="kpiProfit">—</div><div class="kpi-sub" id="kpiProfitSub">Loading…</div><div class="kpi-accent-bar green"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Gross Margin</div><div class="kpi-value gold" id="kpiMargin">—</div><div class="kpi-sub">Avg unit margin</div><div class="kpi-accent-bar gold"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Transactions</div><div class="kpi-value cyan" id="kpiTxns">—</div><div class="kpi-sub" id="kpiTxnsSub">Units sold</div><div class="kpi-accent-bar cyan"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Ticket</div><div class="kpi-value" id="kpiAvgTicket">—</div><div class="kpi-sub">Per transaction</div><div class="kpi-accent-bar"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Available Stock</div><div class="kpi-value green" id="kpiStock">—</div><div class="kpi-sub">Units in boutique</div><div class="kpi-accent-bar green"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Low Stock Alerts</div><div class="kpi-value gold" id="kpiLowStock">—</div><div class="kpi-sub">≤1 unit remaining</div><div class="kpi-accent-bar gold"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Sold Out</div><div class="kpi-value red" id="kpiSoldOut">—</div><div class="kpi-sub">Items at zero stock</div><div class="kpi-accent-bar red"></div></div>
+  </div>
+
+  <!-- Charts Row 1: Revenue Trend + Platform Donut -->
+  <div class="chart-row chart-row-2" style="margin-bottom:16px;">
+    <div class="chart-card">
+      <div class="section-head">
+        <div><div class="section-title">Revenue & Profit Trend</div><div class="section-sub">Monthly performance</div></div>
+      </div>
+      <div class="chart-wrap" style="height:240px;">
+        <canvas id="chartRevenue"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="section-head">
+        <div><div class="section-title">Sales by Platform</div><div class="section-sub">Channel breakdown</div></div>
+      </div>
+      <div class="chart-wrap" style="height:240px;">
+        <canvas id="chartPlatform"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2: Salesperson + Category Stock -->
+  <div class="chart-row chart-row-2b" style="margin-bottom:28px;">
+    <div class="chart-card">
+      <div class="section-head">
+        <div><div class="section-title">Sales by Salesperson</div><div class="section-sub">Revenue per team member</div></div>
+      </div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="chartSalesperson"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="section-head">
+        <div><div class="section-title">Stock by Category</div><div class="section-sub">Available units</div></div>
+      </div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="chartCategory"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Centre -->
+  <div class="section-head"><div><div class="section-title">Action Centre</div><div class="section-sub">Items requiring immediate attention</div></div></div>
+  <div class="action-grid" style="margin-bottom:28px;">
+    <div class="alert-card">
+      <div class="alert-title">
+        🔴 Low Stock / Sold Out
+        <span class="alert-badge red" id="lowStockCount">0</span>
+      </div>
+      <table class="alert-table" id="lowStockTable">
+        <thead><tr><th>Product ID</th><th>Description</th><th>Category</th><th>Qty</th></tr></thead>
+        <tbody><tr><td colspan="4" class="empty-state">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="alert-card">
+      <div class="alert-title">
+        🏆 Salesperson Leaderboard
+        <span class="alert-badge gold" id="periodLabel">Today</span>
+      </div>
+      <div id="leaderboard"><p class="empty-state">Loading…</p></div>
+    </div>
+  </div>
+
+  <!-- Recent Sales Ledger -->
+  <div class="section-head">
+    <div><div class="section-title">Sales Ledger</div><div class="section-sub" id="ledgerSub">Recent transactions</div></div>
+  </div>
+  <div class="ledger-card">
+    <table class="ledger-table" id="ledgerTable">
+      <thead>
+        <tr>
+          <th>Invoice</th>
+          <th>Date</th>
+          <th>Product</th>
+          <th>Customer</th>
+          <th>Platform</th>
+          <th>Salesperson</th>
+          <th>Payment</th>
+          <th>Revenue</th>
+          <th>Profit</th>
+        </tr>
+      </thead>
+      <tbody><tr><td colspan="9" class="empty-state">Loading transactions…</td></tr></tbody>
+    </table>
+  </div>
+
+</div><!-- /.dash -->
+
+<script>
+  // ─────────────────────────────────────────
+  // CONFIG
+  // ─────────────────────────────────────────
+  const SUPABASE_URL = 'https://dyjfbxjeubmekelcdogi.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5amZieGpldWJtZWtlbGNkb2dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTQ3NDcsImV4cCI6MjEwODI3MDc0N30.TCgZ5f28OCiRm1i6lJUFvRe9CVWw3xZPcCH7Z_-5-as';
+
+  let supabase = null;
+  let allSales = [];
+  let allInventory = [];
+  let activePeriod = 'today';
+  let charts = {};
+
+  // ─────────────────────────────────────────
+  // INIT
+  // ─────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      await loadAll();
+    } catch(e) {
+      setConn(false);
+      hideLoader();
+    }
+  });
+
+  async function loadAll() {
+    showLoader();
+    try {
+      const [salesRes, invRes] = await Promise.all([
+        supabase.from('sales').select('*').order('sale_date', { ascending: false }),
+        supabase.from('inventory').select('*')
+      ]);
+      if (salesRes.error) throw salesRes.error;
+      if (invRes.error) throw invRes.error;
+      allSales = salesRes.data || [];
+      allInventory = invRes.data || [];
+      setConn(true);
+      renderAll();
+    } catch(e) {
+      setConn(false);
+      console.error(e);
+    } finally {
+      hideLoader();
+      document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-KE', {hour:'2-digit',minute:'2-digit'});
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // PERIOD FILTER
+  // ─────────────────────────────────────────
+  function setPeriod(p) {
+    activePeriod = p;
+    document.querySelectorAll('.period-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.period === p);
+    });
+    renderAll();
+  }
+
+  function periodLabel() {
+    return { today:'Today', week:'This Week', month:'This Month', ytd:'YTD', all:'All Time' }[activePeriod] || '';
+  }
+
+  function filterSales(sales) {
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0,10);
+    return sales.filter(s => {
+      if (!s.sale_date) return activePeriod === 'all';
+      const d = s.sale_date.slice(0,10);
+      if (activePeriod === 'today') return d === todayStr;
+      if (activePeriod === 'week') {
+        const start = new Date(now); start.setDate(now.getDate() - now.getDay());
+        return new Date(d) >= start;
+      }
+      if (activePeriod === 'month') return d.slice(0,7) === todayStr.slice(0,7);
+      if (activePeriod === 'ytd') return d.slice(0,4) === todayStr.slice(0,4);
+      return true;
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // RENDER ALL
+  // ─────────────────────────────────────────
+  function renderAll() {
+    const sales = filterSales(allSales);
+    renderKPIs(sales);
+    renderRevenueChart(sales);
+    renderPlatformChart(sales);
+    renderSalespersonChart(sales);
+    renderCategoryChart();
+    renderActionCentre(sales);
+    renderLedger(sales);
+    document.getElementById('periodLabel').textContent = periodLabel();
+  }
+
+  // ─────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────
+  function fmtKES(n) {
+    if (isNaN(n) || n === null) return 'KES 0';
+    return 'KES ' + Number(n).toLocaleString('en-KE', {maximumFractionDigits:0});
+  }
+  function revenue(s) { return (Number(s.selling_price)||0) - (Number(s.discount)||0); }
+  function profit(s) { return revenue(s) - (Number(s.cost_price)||0); }
+
+  // ─────────────────────────────────────────
+  // KPI CARDS
+  // ─────────────────────────────────────────
+  function renderKPIs(sales) {
+    const totalRev = sales.reduce((a,s)=>a+revenue(s),0);
+    const totalProfit = sales.reduce((a,s)=>a+profit(s),0);
+    const margin = totalRev > 0 ? (totalProfit/totalRev*100) : 0;
+    const txns = sales.length;
+    const avgTicket = txns > 0 ? totalRev/txns : 0;
+
+    const available = allInventory.filter(i=>(Number(i.total_qty_stocked)||0)>0).reduce((a,i)=>a+(Number(i.total_qty_stocked)||0),0);
+    const lowStock = allInventory.filter(i=>{ const q=Number(i.total_qty_stocked)||0; return q>0 && q<=1; }).length;
+    const soldOut = allInventory.filter(i=>(Number(i.total_qty_stocked)||0)===0).length;
+
+    setText('kpiRevenue', fmtKES(totalRev));
+    setText('kpiRevenueSub', periodLabel() + ' revenue');
+    setText('kpiProfit', fmtKES(totalProfit));
+    setText('kpiProfitSub', periodLabel() + ' profit');
+    setText('kpiMargin', margin.toFixed(1) + '%');
+    setText('kpiTxns', txns.toString());
+    setText('kpiTxnsSub', txns === 1 ? '1 transaction' : txns + ' transactions');
+    setText('kpiAvgTicket', fmtKES(avgTicket));
+    setText('kpiStock', available.toString());
+    setText('kpiLowStock', lowStock.toString());
+    setText('kpiSoldOut', soldOut.toString());
+  }
+
+  function setText(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
+
+  // ─────────────────────────────────────────
+  // REVENUE TREND CHART (Monthly)
+  // ─────────────────────────────────────────
+  function renderRevenueChart(sales) {
+    const byMonth = {};
+    allSales.forEach(s => {
+      if (!s.sale_date) return;
+      const m = s.sale_date.slice(0,7);
+      if (!byMonth[m]) byMonth[m] = { rev:0, profit:0 };
+      byMonth[m].rev += revenue(s);
+      byMonth[m].profit += profit(s);
+    });
+    const months = Object.keys(byMonth).sort().slice(-12);
+    const labels = months.map(m => {
+      const [y,mo] = m.split('-');
+      return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1] + ' ' + y.slice(2);
+    });
+    const revData = months.map(m=>byMonth[m].rev);
+    const profData = months.map(m=>byMonth[m].profit);
+
+    destroyChart('chartRevenue');
+    const ctx = document.getElementById('chartRevenue').getContext('2d');
+    charts.revenue = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label:'Revenue (KES)', data:revData, backgroundColor:'rgba(233,30,140,0.6)', borderColor:'#e91e8c', borderWidth:1, borderRadius:4 },
+          { label:'Profit (KES)', data:profData, type:'line', borderColor:'#10b981', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:0.4 }
+        ]
+      },
+      options: chartOpts('KES')
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // PLATFORM DONUT
+  // ─────────────────────────────────────────
+  function renderPlatformChart(sales) {
+    const byPlatform = {};
+    sales.forEach(s => {
+      const p = s.platform || 'Unknown';
+      byPlatform[p] = (byPlatform[p]||0) + revenue(s);
+    });
+    const labels = Object.keys(byPlatform);
+    const data = labels.map(l=>byPlatform[l]);
+    const colors = ['#e91e8c','#10b981','#f59e0b','#06b6d4','#8b5cf6','#ef4444','#ec4899'];
+
+    destroyChart('chartPlatform');
+    const ctx = document.getElementById('chartPlatform').getContext('2d');
+    charts.platform = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{ data, backgroundColor: colors.slice(0,labels.length), borderWidth:0, hoverOffset:6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: { position:'right', labels:{ color:'#9e9e9e', font:{size:11}, boxWidth:10, padding:10 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtKES(ctx.raw)}` } }
+        }
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // SALESPERSON BAR
+  // ─────────────────────────────────────────
+  function renderSalespersonChart(sales) {
+    const bySP = {};
+    sales.forEach(s => {
+      const sp = s.salesperson || 'Unknown';
+      bySP[sp] = (bySP[sp]||0) + revenue(s);
+    });
+    const sorted = Object.entries(bySP).sort((a,b)=>b[1]-a[1]);
+    const labels = sorted.map(x=>x[0]);
+    const data = sorted.map(x=>x[1]);
+
+    destroyChart('chartSalesperson');
+    const ctx = document.getElementById('chartSalesperson').getContext('2d');
+    charts.salesperson = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ label:'Revenue (KES)', data, backgroundColor:'rgba(6,182,212,0.65)', borderColor:'#06b6d4', borderWidth:1, borderRadius:6 }]
+      },
+      options: { ...chartOpts('KES'), indexAxis:'y' }
+    });
+
+    // Leaderboard
+    const lb = document.getElementById('leaderboard');
+    if (!sorted.length) { lb.innerHTML='<p class="empty-state">No sales in this period</p>'; return; }
+    const max = sorted[0][1];
+    const rankClasses = ['gold','silver','bronze'];
+    lb.innerHTML = sorted.slice(0,6).map((x,i)=>`
+      <div class="leader-row">
+        <div class="leader-rank ${rankClasses[i]||''}">${i+1}</div>
+        <div class="leader-info">
+          <div class="leader-name">${x[0]}</div>
+          <div class="leader-bar-wrap"><div class="leader-bar" style="width:${max>0?(x[1]/max*100).toFixed(1):0}%"></div></div>
+        </div>
+        <div class="leader-amt">${fmtKES(x[1])}</div>
+      </div>
+    `).join('');
+  }
+
+  // ─────────────────────────────────────────
+  // CATEGORY STOCK BAR
+  // ─────────────────────────────────────────
+  function renderCategoryChart() {
+    const byCat = {};
+    allInventory.forEach(i => {
+      const cat = i.category || 'Uncategorised';
+      byCat[cat] = (byCat[cat]||0) + (Number(i.total_qty_stocked)||0);
+    });
+    const sorted = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+    const labels = sorted.map(x=>x[0]);
+    const data = sorted.map(x=>x[1]);
+    const colors = ['#e91e8c','#10b981','#f59e0b','#06b6d4','#8b5cf6','#ef4444'];
+
+    destroyChart('chartCategory');
+    const ctx = document.getElementById('chartCategory').getContext('2d');
+    charts.category = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ label:'Units in Stock', data, backgroundColor: labels.map((_,i)=>colors[i%colors.length]+'aa'), borderColor: labels.map((_,i)=>colors[i%colors.length]), borderWidth:1, borderRadius:5 }]
+      },
+      options: chartOpts('units')
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // CHART OPTIONS HELPER
+  // ─────────────────────────────────────────
+  function chartOpts(unit) {
+    return {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color:'#9e9e9e', font:{size:11}, boxWidth:10 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${unit==='KES'?fmtKES(ctx.raw):ctx.raw+' '+unit}` } }
+      },
+      scales: {
+        x: { ticks:{color:'#666',font:{size:10}}, grid:{color:'rgba(255,255,255,.04)'} },
+        y: { ticks:{color:'#666',font:{size:10}, callback: v=>unit==='KES'?'KES '+Number(v).toLocaleString():v}, grid:{color:'rgba(255,255,255,.04)'} }
+      }
+    };
+  }
+
+  function destroyChart(id) { if(charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+  // ─────────────────────────────────────────
+  // ACTION CENTRE
+  // ─────────────────────────────────────────
+  function renderActionCentre(sales) {
+    const lowItems = allInventory.filter(i=>(Number(i.total_qty_stocked)||0)<=1).sort((a,b)=>(Number(a.total_qty_stocked)||0)-(Number(b.total_qty_stocked)||0));
+    document.getElementById('lowStockCount').textContent = lowItems.length;
+    const tbody = document.querySelector('#lowStockTable tbody');
+    if (!lowItems.length) {
+      tbody.innerHTML='<tr><td colspan="4" class="empty-state">All items well stocked ✓</td></tr>'; return;
+    }
+    tbody.innerHTML = lowItems.slice(0,8).map(i => {
+      const qty = Number(i.total_qty_stocked)||0;
+      const pillClass = qty===0?'zero':qty<=1?'red':'gold';
+      const pillLabel = qty===0?'SOLD OUT':qty+' left';
+      return `<tr>
+        <td><span class="inv-tag">${i.product_id||'—'}</span></td>
+        <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${i.print_description||'—'}</td>
+        <td style="color:var(--muted)">${i.category||'—'}</td>
+        <td><span class="qty-pill ${pillClass}">${pillLabel}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ─────────────────────────────────────────
+  // SALES LEDGER
+  // ─────────────────────────────────────────
+  function renderLedger(sales) {
+    document.getElementById('ledgerSub').textContent = sales.length + ' transactions — ' + periodLabel();
+    const tbody = document.querySelector('#ledgerTable tbody');
+    if (!sales.length) {
+      tbody.innerHTML='<tr><td colspan="9" class="empty-state">No transactions in this period</td></tr>'; return;
+    }
+    tbody.innerHTML = sales.slice(0,50).map(s => {
+      const rev = revenue(s);
+      const pft = profit(s);
+      const pftClass = pft>=0?'profit-pos':'profit-neg';
+      const payClass = (s.payment_method||'').toLowerCase().includes('mpesa')||s.payment_method==='M-Pesa'?'mpesa':'cash';
+      const dateStr = s.sale_date ? new Date(s.sale_date).toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
+      return `<tr>
+        <td><span class="inv-tag">${s.invoice_number||'—'}</span></td>
+        <td style="color:var(--muted);white-space:nowrap">${dateStr}</td>
+        <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.print_name||s.product_id||'—'}</td>
+        <td style="color:var(--muted)">${s.customer_name||'—'}</td>
+        <td style="color:var(--muted)">${s.platform||'—'}</td>
+        <td>${s.salesperson||'—'}</td>
+        <td><span class="pay-tag ${payClass}">${s.payment_method||'—'}</span></td>
+        <td style="font-weight:600;color:var(--pink)">${fmtKES(rev)}</td>
+        <td class="${pftClass}">${pft>=0?'+':''}${fmtKES(pft)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ─────────────────────────────────────────
+  // UI HELPERS
+  // ─────────────────────────────────────────
+  function setConn(ok) {
+    const badge = document.getElementById('connBadge');
+    const text = document.getElementById('connText');
+    badge.className = 'conn-badge ' + (ok?'green':'red');
+    text.textContent = ok ? 'Supabase Connected' : 'Demo Mode';
+  }
+  function showLoader() { document.getElementById('loaderOverlay').classList.remove('hidden'); }
+  function hideLoader() { document.getElementById('loaderOverlay').classList.add('hidden'); }
+</script>
+</body>
+</html>
