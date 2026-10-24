@@ -526,8 +526,8 @@
         console.warn('Inventory query rejected:', invResult.reason?.message);
       }
 
-      const anyData = allSales.length > 0 || allInventory.length > 0;
-      setConn(anyData);
+      // We reached here = Supabase responded (tables may just be empty)
+      setConn(true);
       renderAll();
     } catch(e) {
       console.error('loadAll unexpected error:', e);
