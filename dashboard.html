@@ -325,7 +325,7 @@
       </span>
       <a href="/index.html" class="nav-btn nav-btn-inv">📦 Inventory</a>
       <a href="/pos.html" class="nav-btn nav-btn-pos">💳 POS Terminal</a>
-      <button class="refresh-btn" id="btnRefresh" onclick="loadAll()">⟳ Refresh</button>
+      <button class="refresh-btn" id="btnRefresh" onclick="if(sbClient)loadAll()">⟳ Refresh</button>
       <span id="lastUpdated"></span>
     </div>
   </div>
@@ -449,7 +449,7 @@
   const SUPABASE_URL = 'https://dyjfbxjeubmekelcdogi.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5amZieGpldWJtZWtlbGNkb2dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTQ3NDcsImV4cCI6MjEwODI3MDc0N30.TCgZ5f28OCiRm1i6lJUFvRe9CVWw3xZPcCH7Z_-5-as';
 
-  let supabase = null;
+  let sbClient = null;       // Supabase client instance
   let allSales = [];
   let allInventory = [];
   let activePeriod = 'today';
@@ -460,33 +460,84 @@
   // ─────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', async () => {
     try {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+        throw new Error('Supabase library failed to load from CDN');
+      }
+      sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       await loadAll();
     } catch(e) {
+      console.error('Dashboard init error:', e);
       setConn(false);
+      renderAll();
       hideLoader();
     }
   });
 
+  // ─────────────────────────────────────────
+  // TIMEOUT WRAPPER
+  // ─────────────────────────────────────────
+  function withTimeout(promise, ms) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Query timed out after ' + ms + 'ms')), ms)
+      )
+    ]);
+  }
+
   async function loadAll() {
     showLoader();
+
+    // Safety net: always hide loader after 9s no matter what
+    const safetyTimer = setTimeout(() => {
+      console.warn('Safety timer fired — hiding loader after 9s');
+      hideLoader();
+      setConn(false);
+    }, 9000);
+
     try {
-      const [salesRes, invRes] = await Promise.all([
-        supabase.from('sales').select('*').order('sale_date', { ascending: false }),
-        supabase.from('inventory').select('*')
+      // Independent fetches — one failing doesn't block the other
+      const [salesResult, invResult] = await Promise.allSettled([
+        withTimeout(
+          sbClient.from('sales').select('*').order('sale_date', { ascending: false }).limit(500),
+          7000
+        ),
+        withTimeout(
+          sbClient.from('inventory').select('*').limit(1000),
+          7000
+        )
       ]);
-      if (salesRes.error) throw salesRes.error;
-      if (invRes.error) throw invRes.error;
-      allSales = salesRes.data || [];
-      allInventory = invRes.data || [];
-      setConn(true);
+
+      // Parse sales
+      if (salesResult.status === 'fulfilled') {
+        const { data, error } = salesResult.value;
+        if (error) console.warn('Sales query error:', error.message);
+        else allSales = data || [];
+      } else {
+        console.warn('Sales query rejected:', salesResult.reason?.message);
+      }
+
+      // Parse inventory
+      if (invResult.status === 'fulfilled') {
+        const { data, error } = invResult.value;
+        if (error) console.warn('Inventory query error:', error.message);
+        else allInventory = data || [];
+      } else {
+        console.warn('Inventory query rejected:', invResult.reason?.message);
+      }
+
+      const anyData = allSales.length > 0 || allInventory.length > 0;
+      setConn(anyData);
       renderAll();
     } catch(e) {
+      console.error('loadAll unexpected error:', e);
       setConn(false);
-      console.error(e);
+      renderAll();
     } finally {
+      clearTimeout(safetyTimer);
       hideLoader();
-      document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-KE', {hour:'2-digit',minute:'2-digit'});
+      document.getElementById('lastUpdated').textContent =
+        'Updated ' + new Date().toLocaleTimeString('en-KE', {hour:'2-digit', minute:'2-digit'});
     }
   }
 
