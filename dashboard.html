@@ -105,6 +105,8 @@
       color: var(--cyan); border-color: rgba(6,182,212,.35); background: var(--cyan-sub);
     }
     .nav-btn-crm:hover { background: var(--cyan); color: #fff; }
+    .nav-btn-sales { color: var(--pink); border-color: rgba(196,154,44,.4); background: var(--pink-sub); }
+    .nav-btn-sales:hover { background: var(--pink); color: #0B0800; }
     .refresh-btn {
       display: flex; align-items: center; gap: 6px;
       font-size: 12px; font-weight: 600; color: var(--muted);
@@ -337,6 +339,7 @@
       <a href="/index.html" class="nav-btn nav-btn-inv">📦 Inventory</a>
       <a href="/pos.html" class="nav-btn nav-btn-pos">💳 POS Terminal</a>
       <a href="/customers.html" class="nav-btn nav-btn-crm">👥 Customer CRM</a>
+      <a href="/sales.html" class="nav-btn nav-btn-sales">📋 Sales Register</a>
       <button class="refresh-btn" id="btnRefresh" onclick="if(sbClient)loadAll()">⟳ Refresh</button>
       <span id="lastUpdated"></span>
     </div>
