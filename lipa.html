@@ -845,7 +845,7 @@ async function submitRecordPayment() {
     // Refresh the modal details
     openModal(planId);
     renderTable();
-    updateKPIs();
+    renderKPIs();
 
   } catch (err) {
     console.error('Record payment error:', err);
