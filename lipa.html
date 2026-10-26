@@ -186,6 +186,30 @@
     .payment-amount { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--green); }
     .no-payments { text-align: center; color: var(--dim); font-size: 13px; padding: 32px 0; }
 
+    /* Record Payment form */
+    .rec-pay-form { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px; }
+    .rec-pay-form.hidden { display: none; }
+    .rec-pay-title { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--purple); margin-bottom: 14px; }
+    .rec-pay-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .rec-pay-row.three { grid-template-columns: 1fr 1fr 1fr; }
+    .rec-pay-group label { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 5px; }
+    .rec-pay-group input, .rec-pay-group select {
+      width: 100%; background: var(--card2); border: 1px solid var(--border2); border-radius: 8px;
+      padding: 9px 11px; color: var(--text); font-family: var(--sans); font-size: 13px; outline: none;
+      transition: border-color .2s;
+    }
+    .rec-pay-group input:focus, .rec-pay-group select:focus { border-color: rgba(139,92,246,.6); }
+    .rec-pay-group input::placeholder { color: var(--dim); }
+    .btn-rec-pay {
+      width: 100%; margin-top: 12px; padding: 11px; border-radius: 10px; border: none; cursor: pointer;
+      background: var(--purple); color: #fff; font-family: var(--sans); font-size: 13px; font-weight: 700;
+      letter-spacing: 0.03em; transition: all .2s;
+    }
+    .btn-rec-pay:hover { background: #7c3aed; }
+    .btn-rec-pay:disabled { opacity: 0.5; cursor: not-allowed; }
+    .rec-pay-success { background: var(--green-sub); border: 1px solid rgba(16,185,129,.35); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--green); margin-top: 10px; display: none; }
+    .balance-fully-paid { background: rgba(196,154,44,0.12); border: 1px solid rgba(196,154,44,.35); border-radius: 8px; padding: 14px; font-size: 13px; color: var(--gold); text-align: center; margin-top: 16px; display: none; font-family: var(--serif); }
+
     /* loader */
     #loader { position: fixed; inset: 0; z-index: 100; background: rgba(11,8,0,0.85); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
     .loader-ring { width: 44px; height: 44px; border-radius: 50%; border: 3px solid rgba(139,92,246,0.2); border-top-color: var(--purple); animation: spin 0.9s linear infinite; }
@@ -341,6 +365,53 @@
       <div class="modal-prog-row" id="modalProgRow"></div>
       <div class="modal-section-title">Payment History</div>
       <div class="payment-list" id="paymentList"></div>
+
+      <!-- Record a new instalment payment -->
+      <div class="rec-pay-form hidden" id="recPayForm">
+        <div class="rec-pay-title">💜 Record Instalment Payment</div>
+        <div class="rec-pay-row three">
+          <div class="rec-pay-group">
+            <label>Amount (KES) *</label>
+            <input type="number" id="rpAmount" placeholder="e.g. 500" min="1" step="50" />
+          </div>
+          <div class="rec-pay-group">
+            <label>Payment Date *</label>
+            <input type="date" id="rpDate" />
+          </div>
+          <div class="rec-pay-group">
+            <label>Method</label>
+            <select id="rpMethod">
+              <option value="M-Pesa">M-Pesa</option>
+              <option value="Cash">Cash</option>
+            </select>
+          </div>
+        </div>
+        <div class="rec-pay-row">
+          <div class="rec-pay-group">
+            <label>Recorded By</label>
+            <select id="rpBy">
+              <option value="">— Select —</option>
+              <option value="Anna">Anna</option>
+              <option value="Vivian">Vivian</option>
+              <option value="Mamake Scola">Mamake Scola</option>
+              <option value="Mamake Esther">Mamake Esther</option>
+              <option value="Chelsea">Chelsea</option>
+              <option value="Irene">Irene</option>
+            </select>
+          </div>
+          <div class="rec-pay-group">
+            <label>Notes (optional)</label>
+            <input type="text" id="rpNotes" placeholder="M-Pesa ref, etc." />
+          </div>
+        </div>
+        <button class="btn-rec-pay" id="btnRecPay" onclick="submitRecordPayment()">
+          Record Payment
+        </button>
+        <div class="rec-pay-success" id="rpSuccess">✅ Payment recorded successfully!</div>
+        <div class="balance-fully-paid" id="rpFullyPaid">
+          🎉 Balance fully paid! Item is <strong>Ready for Packaging &amp; Collection</strong>.
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -656,6 +727,26 @@ function openModal(planId) {
     list.innerHTML = html;
   }
 
+  // Show or hide the Record Payment form based on plan status
+  const recPayForm = document.getElementById('recPayForm');
+  const canPay = (plan.status === 'Active' || plan.status === 'Overdue') && plan.balance > 0;
+  if (canPay) {
+    recPayForm.classList.remove('hidden');
+    // Set default date to today
+    document.getElementById('rpDate').value = new Date().toISOString().split('T')[0];
+    // Pre-fill amount with remaining balance (capped to reasonable entry)
+    document.getElementById('rpAmount').value = plan.balance > 0 ? plan.balance : '';
+    document.getElementById('rpNotes').value = '';
+    document.getElementById('rpSuccess').style.display = 'none';
+    document.getElementById('rpFullyPaid').style.display = 'none';
+    document.getElementById('btnRecPay').disabled = false;
+    document.getElementById('btnRecPay').textContent = 'Record Payment';
+    // Store current plan ID for the submit handler
+    recPayForm.dataset.planId = plan.plan_id;
+  } else {
+    recPayForm.classList.add('hidden');
+  }
+
   document.getElementById('payModal').classList.remove('hidden');
 }
 
@@ -665,6 +756,104 @@ function closeModal(e) {
   }
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ── Record Instalment Payment ── */
+async function submitRecordPayment() {
+  const planId = document.getElementById('recPayForm').dataset.planId;
+  const plan   = allPlans.find(p => p.plan_id === planId);
+  if (!plan) return;
+
+  const amount = parseFloat(document.getElementById('rpAmount').value) || 0;
+  const date   = document.getElementById('rpDate').value;
+  const method = document.getElementById('rpMethod').value;
+  const by     = document.getElementById('rpBy').value;
+  const notes  = document.getElementById('rpNotes').value.trim();
+
+  if (amount <= 0) {
+    alert('Please enter a payment amount greater than 0.');
+    document.getElementById('rpAmount').focus();
+    return;
+  }
+  if (!date) {
+    alert('Please set a payment date.');
+    document.getElementById('rpDate').focus();
+    return;
+  }
+  if (amount > plan.balance + 1) {   // +1 tolerance for rounding
+    if (!confirm(`Payment (KES ${fmt(amount)}) is more than the balance (KES ${fmt(plan.balance)}). Continue anyway?`)) return;
+  }
+
+  const btn = document.getElementById('btnRecPay');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    // 1. Write to lipa_polepole_payments
+    const { error: payErr } = await sbClient
+      .from('lipa_polepole_payments')
+      .insert([{ plan_id: planId, payment_date: date, amount, payment_method: method, recorded_by: by || null, notes: notes || null }]);
+
+    if (payErr) throw new Error(payErr.message);
+
+    // 2. Write to sales table so revenue reflects actual cash received
+    const invoiceNote = `LP Instalment | Plan: ${planId}${by?' | By: '+by:''}${notes?' | '+notes:''}`;
+    await sbClient.from('sales').insert([{
+      sale_date: new Date(date + 'T' + new Date().toTimeString().slice(0,8)).toISOString(),
+      customer_name: plan.customer_name || '',
+      customer_id: null,
+      product_id: plan.reserved_product_id || null,
+      print_name: plan.print_name || '',
+      platform: 'Walk-in',
+      payment_method: 'Lipa Polepole - Instalment',
+      selling_price: amount,
+      discount: 0,
+      cost_price: 0,
+      salesperson: by || '',
+      delivery_method: 'Pickup',
+      notes: invoiceNote
+    }]);
+
+    // 3. Update local state
+    if (!paysByPlan[planId]) paysByPlan[planId] = [];
+    paysByPlan[planId].unshift({ plan_id: planId, payment_date: date, amount, payment_method: method, recorded_by: by, notes });
+
+    // Re-enrich the plan
+    const idx = allPlans.findIndex(p => p.plan_id === planId);
+    if (idx !== -1) {
+      const r   = allPlans[idx];
+      const net  = r.net_price;
+      const dep  = parseNum(r.deposit_paid);
+      const pays = (paysByPlan[planId] || []).reduce((s, p) => s + parseNum(p.amount), 0);
+      const bal  = Math.max(0, net - dep - pays);
+      const pct  = net > 0 ? Math.min(100, Math.round((dep + pays) / net * 100)) : 0;
+      allPlans[idx] = { ...r, paid_to_date: pays, balance: bal, progress_pct: pct };
+
+      // 4. If balance = 0, update plan status to Ready for Packaging
+      if (bal === 0) {
+        await sbClient.from('lipa_polepole_plans')
+          .update({ status: 'Completed', collection_status: 'Ready for Packaging' })
+          .eq('plan_id', planId);
+        allPlans[idx].status = 'Completed';
+        allPlans[idx].collection_status = 'Ready for Packaging';
+        document.getElementById('rpFullyPaid').style.display = 'block';
+      }
+    }
+
+    document.getElementById('rpSuccess').style.display = 'block';
+    btn.textContent = '✅ Saved';
+
+    // Refresh the modal details
+    openModal(planId);
+    renderTable();
+    updateKPIs();
+
+  } catch (err) {
+    console.error('Record payment error:', err);
+    alert('Error saving payment: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Record Payment';
+  }
+}
 
 /* ── CSV export ── */
 function exportCSV() {

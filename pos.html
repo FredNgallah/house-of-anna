@@ -514,6 +514,34 @@
       color: var(--pink-accent);
     }
 
+    /* ── Lipa Polepole Instalment Panel ── */
+    .lipa-panel {
+      display: none;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.35);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .lipa-panel.visible { display: block; }
+    .lipa-panel-header {
+      font-family: var(--font-serif);
+      font-size: 0.92rem;
+      color: #a78bfa;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .lipa-deposit-notice {
+      font-size: 0.75rem;
+      color: #a78bfa;
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: rgba(139, 92, 246, 0.12);
+      border-radius: 8px;
+      border-left: 3px solid #8b5cf6;
+      line-height: 1.5;
+    }
+
     .invoice-badge {
       display: inline-flex;
       align-items: center;
@@ -1000,9 +1028,10 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="paymentMethod">Payment Method <span class="req">*</span></label>
-                <select id="paymentMethod" name="paymentMethod" required>
+                <select id="paymentMethod" name="paymentMethod" required onchange="handlePaymentMethodChange(this.value)">
                   <option value="M-Pesa" selected>M-Pesa (Buy Goods / Till)</option>
                   <option value="Cash">Cash (Store Counter)</option>
+                  <option value="Lipa Polepole">💜 Lipa Polepole (Instalment Plan)</option>
                 </select>
               </div>
 
@@ -1012,6 +1041,24 @@
                   <option value="Pickup" selected>Pickup (Boutique)</option>
                   <option value="Delivery">Delivery (Rider / Courier)</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Lipa Polepole Instalment Plan Panel -->
+            <div class="lipa-panel" id="lipaPanel">
+              <div class="lipa-panel-header">💜 Lipa Polepole — Instalment Plan Details</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="lipaDeposit">Deposit Amount (KES) <span class="req">*</span></label>
+                  <input type="number" id="lipaDeposit" placeholder="Auto-filled (40%)" min="0" step="50" oninput="updatePricingSummary()" />
+                </div>
+                <div class="form-group">
+                  <label for="lipaDueDate">Balance Due By <span class="req">*</span></label>
+                  <input type="date" id="lipaDueDate" />
+                </div>
+              </div>
+              <div class="lipa-deposit-notice">
+                💡 <strong>Reserved item</strong> — stock is held, not deducted, until the balance is fully paid and the garment is collected.
               </div>
             </div>
 
@@ -1074,8 +1121,12 @@
                 <span>Estimated Profit:</span>
                 <span id="sumProfit" style="color: #10b981;">KES 0</span>
               </div>
+              <div class="summary-row" id="sumDepositRow" style="display:none;">
+                <span>Deposit Due Today:</span>
+                <span id="sumDeposit" style="color: #a78bfa; font-weight: 600;">KES 0</span>
+              </div>
               <div class="summary-row total-row">
-                <span>Net Total Payable:</span>
+                <span id="sumTotalLabel">Net Total Payable:</span>
                 <span class="amount" id="sumTotalPayable">KES 0</span>
               </div>
             </div>
@@ -1083,7 +1134,7 @@
             <!-- Submit Button -->
             <button type="submit" class="btn-primary" id="btnSubmitSale">
               <span class="spinner" id="btnSpinner"></span>
-              <span id="btnSubmitText">Complete Sale & Record</span>
+              <span id="btnSubmitText">✅ Complete Sale &amp; Record</span>
             </button>
           </form>
         </div>
@@ -1273,6 +1324,58 @@
       const currentMax = getHighestInvoiceNumber(existingInvoices);
       const nextNum = currentMax + 1;
       return 'HOA-SAL-' + String(nextNum).padStart(3, '0');
+    }
+
+    // Generate next Lipa Polepole plan ID — queries Supabase for count, falls back to timestamp
+    async function generateNextLipaPlanId() {
+      try {
+        if (supabaseClient) {
+          const { count } = await supabaseClient
+            .from('lipa_polepole_plans')
+            .select('*', { count: 'exact', head: true });
+          const nextNum = (count || 0) + 1;
+          return 'HOA-LP-' + String(nextNum).padStart(4, '0');
+        }
+      } catch (e) { /* fallthrough */ }
+      // Fallback: use timestamp digits
+      return 'HOA-LP-' + Date.now().toString().slice(-4);
+    }
+
+    // Show / hide the Lipa panel and update button text when payment method changes
+    function handlePaymentMethodChange(value) {
+      const panel = document.getElementById('lipaPanel');
+      const btnText = document.getElementById('btnSubmitText');
+      const sumDepositRow = document.getElementById('sumDepositRow');
+      const sumTotalLabel = document.getElementById('sumTotalLabel');
+
+      if (value === 'Lipa Polepole') {
+        panel.classList.add('visible');
+        btnText.textContent = '💜 Reserve & Create Plan';
+        sumDepositRow.style.display = 'flex';
+        sumTotalLabel.textContent = 'Full Plan Price:';
+
+        // Auto-fill deposit (40% of net price) and due date (today + 30 days)
+        const selling = parseFloat(document.getElementById('sellingPrice').value) || 0;
+        const discount = parseFloat(document.getElementById('discount').value) || 0;
+        const net = Math.max(0, selling - discount);
+        const depositField = document.getElementById('lipaDeposit');
+        if (!depositField.value || depositField.value === '0') {
+          depositField.value = net > 0 ? Math.round(net * 0.40) : '';
+        }
+        const dueDateField = document.getElementById('lipaDueDate');
+        if (!dueDateField.value) {
+          const d = new Date();
+          d.setDate(d.getDate() + 30);
+          dueDateField.value = d.toISOString().split('T')[0];
+        }
+        updatePricingSummary();
+      } else {
+        panel.classList.remove('visible');
+        btnText.textContent = '✅ Complete Sale & Record';
+        sumDepositRow.style.display = 'none';
+        sumTotalLabel.textContent = 'Net Total Payable:';
+        updatePricingSummary();
+      }
     }
 
     function formatKES(amount) {
@@ -1481,6 +1584,17 @@
       const selling = parseFloat(document.getElementById('sellingPrice').value) || 0;
       const discount = parseFloat(document.getElementById('discount').value) || 0;
       const cost = parseFloat(document.getElementById('costPrice').value) || 0;
+      // Also re-auto-fill deposit when selling/discount change in LP mode
+      const isLP = document.getElementById('paymentMethod').value === 'Lipa Polepole';
+      if (isLP) {
+        const net = Math.max(0, selling - discount);
+        const depositField = document.getElementById('lipaDeposit');
+        if (!depositField.value || depositField.value === '0') {
+          depositField.value = net > 0 ? Math.round(net * 0.40) : '';
+        }
+        const dep = parseFloat(document.getElementById('lipaDeposit').value) || 0;
+        document.getElementById('sumDeposit').textContent = formatKES(dep);
+      }
 
       const finalAmount = Math.max(0, selling - discount);
       const profit = finalAmount - cost;
@@ -1537,9 +1651,33 @@
       const spinner = document.getElementById('btnSpinner');
       const btnText = document.getElementById('btnSubmitText');
 
+      const isLipaSale = paymentMethod === 'Lipa Polepole';
+
+      // Extra validation for Lipa Polepole
+      if (isLipaSale) {
+        const lipaDeposit = parseFloat(document.getElementById('lipaDeposit').value) || 0;
+        const lipaDueDate = document.getElementById('lipaDueDate').value;
+        const netPrice = Math.max(0, sellingPrice - discount);
+        if (lipaDeposit <= 0) {
+          showToast('Please enter the deposit amount for the instalment plan', 'error');
+          document.getElementById('lipaDeposit').focus();
+          return;
+        }
+        if (lipaDeposit >= netPrice) {
+          showToast('Deposit must be less than the full price — use regular sale for full payment', 'error');
+          document.getElementById('lipaDeposit').focus();
+          return;
+        }
+        if (!lipaDueDate) {
+          showToast('Please set a due date for the remaining balance', 'error');
+          document.getElementById('lipaDueDate').focus();
+          return;
+        }
+      }
+
       btn.disabled = true;
       spinner.style.display = 'inline-block';
-      btnText.textContent = 'Processing Sale...';
+      btnText.textContent = isLipaSale ? 'Creating Plan...' : 'Processing Sale...';
 
       try {
         const existingInvoices = salesRecords.map(s => s.invoice_number);
@@ -1606,9 +1744,16 @@
           }
         }
 
+        // For Lipa Polepole sales, we record the DEPOSIT AMOUNT as selling_price
+        // (not the full plan price). Each future instalment also writes its own sales row
+        // from lipa.html, so dashboard revenue = sum of actual cash received.
+        const lipaDepositAmt = isLipaSale
+          ? (parseFloat(document.getElementById('lipaDeposit').value) || 0)
+          : null;
+
         // Exact sales table schema as specified by user:
-        // invoice_number, sale_date, customer_id, customer_name, product_id, 
-        // print_name, platform, payment_method, selling_price, discount, 
+        // invoice_number, sale_date, customer_id, customer_name, product_id,
+        // print_name, platform, payment_method, selling_price, discount,
         // cost_price, salesperson, delivery_method, notes
         const saleRecord = {
           invoice_number: invoiceNumber,
@@ -1618,13 +1763,15 @@
           product_id: selectedItem.product_id,
           print_name: selectedItem.print_description,
           platform: platform,
-          payment_method: paymentMethod,
-          selling_price: sellingPrice,
-          discount: discount,
+          payment_method: isLipaSale ? 'Lipa Polepole - Deposit' : paymentMethod,
+          selling_price: isLipaSale ? lipaDepositAmt : sellingPrice,
+          discount: isLipaSale ? 0 : discount,    // discount is tracked on the plan, not the deposit row
           cost_price: costPrice,
           salesperson: salesperson,
           delivery_method: deliveryMethod,
-          notes: notes ? (customerPhone ? `Phone: ${customerPhone} | ${notes}` : notes) : (customerPhone ? `Phone: ${customerPhone}` : null)
+          notes: isLipaSale
+            ? `LP Plan: [PLAN_ID_PLACEHOLDER] | Full price: KES ${sellingPrice}${discount>0?' (disc KES '+discount+')':''} | Deposit: KES ${lipaDepositAmt}${customerPhone?' | Phone: '+customerPhone:''}${notes?' | '+notes:''}`
+            : (notes ? (customerPhone ? `Phone: ${customerPhone} | ${notes}` : notes) : (customerPhone ? `Phone: ${customerPhone}` : null))
         };
 
         // 1. Insert into Supabase 'sales' table
@@ -1641,27 +1788,89 @@
             saleSavedToSupabase = true;
           }
 
-          // 2. Decrement total_qty_stocked in 'inventory' table by 1
-          const currentQty = Number(selectedItem.total_qty_stocked) || 1;
-          const newQty = Math.max(0, currentQty - 1);
-          const updatePayload = {
-            total_qty_stocked: newQty
-          };
-          if (newQty === 0) {
-            updatePayload.status = 'Sold Out';
-          }
-
-          const { error: invErr } = await supabaseClient
-            .from('inventory')
-            .update(updatePayload)
-            .eq('product_id', selectedItem.product_id);
-
-          if (invErr) {
-            // Also try updating quantity_stocked if total_qty_stocked didn't match column name
-            await supabaseClient
+          if (isLipaSale) {
+            // ── LIPA POLEPOLE: Reserve the item, do NOT decrement stock ──
+            // Increment reserved_qty (requires: ALTER TABLE inventory ADD COLUMN IF NOT EXISTS reserved_qty int default 0)
+            const currentReserved = Number(selectedItem.reserved_qty) || 0;
+            const { error: resErr } = await supabaseClient
               .from('inventory')
-              .update({ quantity_stocked: newQty, ...(newQty === 0 ? { status: 'Sold Out' } : {}) })
+              .update({ reserved_qty: currentReserved + 1 })
               .eq('product_id', selectedItem.product_id);
+            if (resErr) {
+              console.warn('Could not set reserved_qty (column may not exist yet):', resErr.message);
+            }
+
+            // Create the Lipa Polepole plan record
+            const lipaDeposit = parseFloat(document.getElementById('lipaDeposit').value) || 0;
+            const lipaDueDate = document.getElementById('lipaDueDate').value;
+            const planId = await generateNextLipaPlanId();
+            const todayDate = new Date().toISOString().split('T')[0];
+
+            // Patch the plan_id into the sales record notes now that we know it
+            saleRecord.notes = (saleRecord.notes || '').replace('PLAN_ID_PLACEHOLDER', planId);
+
+            const planRecord = {
+              plan_id: planId,
+              customer_id: resolvedCustomerId || null,
+              customer_name: customerName,
+              phone: customerPhone || null,
+              reserved_product_id: selectedItem.product_id,
+              print_name: selectedItem.print_description,
+              price: sellingPrice,
+              discount: discount,
+              deposit_paid: lipaDeposit,
+              start_date: todayDate,
+              due_date: lipaDueDate,
+              status: 'Active',
+              collection_status: 'Reserved',
+              reservation_tag: 'RES-' + planId,
+              notes: notes || null
+            };
+
+            const { error: planErr } = await supabaseClient
+              .from('lipa_polepole_plans')
+              .insert([planRecord]);
+
+            if (planErr) {
+              console.error('Lipa plan insert error:', planErr);
+              showToast('Warning: Plan record not saved (' + planErr.message + '). Check Supabase.', 'error');
+            } else {
+              // Also record the deposit as first payment in lipa_polepole_payments
+              await supabaseClient
+                .from('lipa_polepole_payments')
+                .insert([{
+                  plan_id: planId,
+                  payment_date: todayDate,
+                  amount: lipaDeposit,
+                  payment_method: 'M-Pesa',
+                  recorded_by: salesperson,
+                  notes: 'Initial deposit — recorded at POS'
+                }]);
+            }
+
+          } else {
+            // ── REGULAR SALE: Decrement total_qty_stocked by 1 ──
+            const currentQty = Number(selectedItem.total_qty_stocked) || 1;
+            const newQty = Math.max(0, currentQty - 1);
+            const updatePayload = { total_qty_stocked: newQty };
+            if (newQty === 0) { updatePayload.status = 'Sold Out'; }
+
+            const { error: invErr } = await supabaseClient
+              .from('inventory')
+              .update(updatePayload)
+              .eq('product_id', selectedItem.product_id);
+
+            if (invErr) {
+              await supabaseClient
+                .from('inventory')
+                .update({ quantity_stocked: newQty, ...(newQty === 0 ? { status: 'Sold Out' } : {}) })
+                .eq('product_id', selectedItem.product_id);
+            }
+
+            // Decrement local inventory
+            selectedItem.total_qty_stocked = Math.max(0, (Number(selectedItem.total_qty_stocked) || 1) - 1);
+            if (selectedItem.total_qty_stocked === 0) { selectedItem.status = 'Sold Out'; }
+            saveLocalInventory();
           }
         }
 
@@ -1669,14 +1878,14 @@
         salesRecords.unshift(saleRecord);
         saveLocalSales();
 
-        // Decrement local inventory
-        selectedItem.total_qty_stocked = Math.max(0, (Number(selectedItem.total_qty_stocked) || 1) - 1);
-        if (selectedItem.total_qty_stocked === 0) {
-          selectedItem.status = 'Sold Out';
+        if (isLipaSale) {
+          const lipaDeposit = parseFloat(document.getElementById('lipaDeposit').value) || 0;
+          const netPrice = Math.max(0, sellingPrice - discount);
+          const balance = Math.max(0, netPrice - lipaDeposit);
+          showToast(`Plan created! Deposit KES ${lipaDeposit.toLocaleString()} received. Balance KES ${balance.toLocaleString()} due.`, 'success');
+        } else {
+          showToast(`Sale recorded successfully! Invoice ${invoiceNumber}`, 'success');
         }
-        saveLocalInventory();
-
-        showToast(`Sale recorded successfully! Invoice ${invoiceNumber}`, 'success');
 
         // Show receipt modal
         showReceipt(saleRecord);
@@ -1685,6 +1894,12 @@
         document.getElementById('posForm').reset();
         clearSelectedProduct();
         document.getElementById('discount').value = '0';
+        // Reset Lipa panel (if it was open, hide it and clear its fields)
+        document.getElementById('lipaPanel').classList.remove('visible');
+        document.getElementById('lipaDeposit').value = '';
+        document.getElementById('lipaDueDate').value = '';
+        document.getElementById('sumDepositRow').style.display = 'none';
+        document.getElementById('sumTotalLabel').textContent = 'Net Total Payable:';
         updatePricingSummary();
         updateNextInvoiceBadge();
 
@@ -1698,7 +1913,11 @@
       } finally {
         btn.disabled = false;
         spinner.style.display = 'none';
-        btnText.textContent = 'Complete Sale & Record';
+        // Restore button label based on current payment method
+        const currentMethod = document.getElementById('paymentMethod').value;
+        btnText.textContent = currentMethod === 'Lipa Polepole'
+          ? '💜 Reserve & Create Plan'
+          : '✅ Complete Sale & Record';
       }
     }
 
