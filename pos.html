@@ -1834,19 +1834,10 @@
             if (planErr) {
               console.error('Lipa plan insert error:', planErr);
               showToast('Warning: Plan record not saved (' + planErr.message + '). Check Supabase.', 'error');
-            } else {
-              // Also record the deposit as first payment in lipa_polepole_payments
-              await supabaseClient
-                .from('lipa_polepole_payments')
-                .insert([{
-                  plan_id: planId,
-                  payment_date: todayDate,
-                  amount: lipaDeposit,
-                  payment_method: 'M-Pesa',
-                  recorded_by: salesperson,
-                  notes: 'Initial deposit — recorded at POS'
-                }]);
             }
+            // NOTE: deposit is NOT inserted into lipa_polepole_payments.
+            // It lives on lipa_polepole_plans.deposit_paid and in the sales table.
+            // lipa_polepole_payments holds only subsequent instalment payments.
 
           } else {
             // ── REGULAR SALE: Decrement total_qty_stocked by 1 ──
