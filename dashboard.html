@@ -173,6 +173,8 @@
     .kpi-accent-bar.gold { background: var(--gold); opacity: .6; }
     .kpi-accent-bar.cyan { background: var(--cyan); opacity: .6; }
     .kpi-accent-bar.red { background: var(--red); opacity: .6; }
+    .kpi-value.purple { color: #a78bfa; }
+    .kpi-accent-bar.purple { background: #8b5cf6; opacity: .6; }
 
     /* ── SECTION HEADING ── */
     .section-head {
@@ -371,6 +373,7 @@
     <div class="kpi-card"><div class="kpi-label">Available Stock</div><div class="kpi-value green" id="kpiStock">—</div><div class="kpi-sub">Units in boutique</div><div class="kpi-accent-bar green"></div></div>
     <div class="kpi-card"><div class="kpi-label">Low Stock Alerts</div><div class="kpi-value gold" id="kpiLowStock">—</div><div class="kpi-sub">≤1 unit remaining</div><div class="kpi-accent-bar gold"></div></div>
     <div class="kpi-card"><div class="kpi-label">Sold Out</div><div class="kpi-value red" id="kpiSoldOut">—</div><div class="kpi-sub">Items at zero stock</div><div class="kpi-accent-bar red"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Reserved Units</div><div class="kpi-value purple" id="kpiReserved">—</div><div class="kpi-sub" id="kpiReservedSub">Lipa Polepole plans</div><div class="kpi-accent-bar purple"></div></div>
   </div>
 
   <!-- Charts Row 1: Revenue Trend + Platform Donut -->
@@ -470,6 +473,7 @@
   let sbClient = null;       // Supabase client instance
   let allSales = [];
   let allInventory = [];
+  let allLipaPlans = [];
   let activePeriod = 'today';
   let charts = {};
 
@@ -515,13 +519,17 @@
 
     try {
       // Independent fetches — one failing doesn't block the other
-      const [salesResult, invResult] = await Promise.allSettled([
+      const [salesResult, invResult, lipaResult] = await Promise.allSettled([
         withTimeout(
           sbClient.from('sales').select('*').order('sale_date', { ascending: false }).limit(500),
           7000
         ),
         withTimeout(
           sbClient.from('inventory').select('*').limit(1000),
+          7000
+        ),
+        withTimeout(
+          sbClient.from('lipa_polepole_plans').select('plan_id,customer_name,print_name,price,deposit_paid,status,reserved_product_id').in('status',['Active','Overdue']),
           7000
         )
       ]);
@@ -542,6 +550,15 @@
         else allInventory = data || [];
       } else {
         console.warn('Inventory query rejected:', invResult.reason?.message);
+      }
+
+      // Parse lipa polepole plans
+      if (lipaResult.status === 'fulfilled') {
+        const { data, error } = lipaResult.value;
+        if (error) console.warn('Lipa plans query error:', error.message);
+        else allLipaPlans = data || [];
+      } else {
+        console.warn('Lipa plans query rejected:', lipaResult.reason?.message);
       }
 
       // We reached here = Supabase responded (tables may just be empty)
@@ -626,9 +643,32 @@
     const txns = sales.length;
     const avgTicket = txns > 0 ? totalRev/txns : 0;
 
-    const available = allInventory.filter(i=>(Number(i.total_qty_stocked)||0)>0).reduce((a,i)=>a+(Number(i.total_qty_stocked)||0),0);
-    const lowStock = allInventory.filter(i=>{ const q=Number(i.total_qty_stocked)||0; return q>0 && q<=1; }).length;
-    const soldOut = allInventory.filter(i=>(Number(i.total_qty_stocked)||0)===0).length;
+    // Available = total stocked minus reserved; reserved_qty defaults to 0 if column absent
+    const available = allInventory.reduce((a,i) => {
+      const stocked = Number(i.total_qty_stocked) || 0;
+      const reserved = Number(i.reserved_qty) || 0;
+      const net = stocked - reserved;
+      return a + (net > 0 ? net : 0);
+    }, 0);
+    const lowStock = allInventory.filter(i => {
+      const stocked = Number(i.total_qty_stocked) || 0;
+      const reserved = Number(i.reserved_qty) || 0;
+      const net = stocked - reserved;
+      return net > 0 && net <= 1;
+    }).length;
+    const soldOut = allInventory.filter(i => {
+      const stocked = Number(i.total_qty_stocked) || 0;
+      const reserved = Number(i.reserved_qty) || 0;
+      return (stocked - reserved) <= 0;
+    }).length;
+
+    // Reserved Units — active/overdue Lipa Polepole plans
+    const reservedCount = allLipaPlans.length;
+    const reservedBalance = allLipaPlans.reduce((a, p) => {
+      const price = Number(p.price) || 0;
+      const deposit = Number(p.deposit_paid) || 0;
+      return a + Math.max(0, price - deposit);
+    }, 0);
 
     setText('kpiRevenue', fmtKES(totalRev));
     setText('kpiRevenueSub', periodLabel() + ' revenue');
@@ -641,6 +681,10 @@
     setText('kpiStock', available.toString());
     setText('kpiLowStock', lowStock.toString());
     setText('kpiSoldOut', soldOut.toString());
+    setText('kpiReserved', reservedCount.toString());
+    setText('kpiReservedSub', reservedCount === 0
+      ? 'No active plans'
+      : fmtKES(reservedBalance) + ' outstanding');
   }
 
   function setText(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
