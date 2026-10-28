@@ -433,7 +433,7 @@ function renderTable(expenses) {
       '<td>' + fmtDate(e.expense_date) + '</td>' +
       '<td style="font-size:.72rem;color:var(--text2);">' + (e.expense_id || '—') + '</td>' +
       '<td><span class="cat-badge" style="background:' + cc.bg + ';color:' + cc.text + '">' + (e.category || '—') + '</span></td>' +
-      '<td style="color:var(--text2);">' + (e.description || '—') + '</td>' +
+      '<td style="color:var(--text2);">' + (e.details || '—') + '</td>' +
       '<td class="amount-cell">' + fmtKES(e.amount) + '</td>' +
       '<td style="color:var(--text2);">' + (e.payment_method || '—') + '</td>' +
       '<td style="color:var(--text2);">' + (e.paid_by || '—') + '</td>' +
@@ -598,7 +598,7 @@ async function saveExpense() {
       expense_id,
       expense_date: date,
       category: cat,
-      description: document.getElementById('fDesc').value.trim() || null,
+      details: document.getElementById('fDesc').value.trim() || null,
       amount,
       payment_method: document.getElementById('fMethod').value,
       paid_by: document.getElementById('fPaidBy').value.trim() || null,
