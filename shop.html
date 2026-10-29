@@ -150,7 +150,7 @@ async function loadAll() {
   const ac = new AbortController();
   const timer = setTimeout(() => { ac.abort(); hideOverlay(); }, 6000);
   try {
-    const r = await fetch(SB_URL+'/rest/v1/inventory?select=*&order=print_name.asc&limit=1000', {
+    const r = await fetch(SB_URL+'/rest/v1/inventory?select=*&order=print_description.asc&limit=1000', {
       signal: ac.signal,
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
     });
@@ -223,8 +223,8 @@ function renderGrid() {
     const price = fmtKES(p.price||p.selling_price||p.unit_price||0);
 
     const imgHtml = p.image_url
-      ? '<img class="card-img" src="'+escHtml(p.image_url)+'" alt="'+escHtml(p.print_name||'')+'" loading="lazy" onerror="this.parentElement.innerHTML='<div class=card-img-placeholder><div class=placeholder-pattern></div><div class=placeholder-initials>'+initials(p.print_name)+'</div></div>'">'
-      : '<div class="card-img-placeholder"><div class="placeholder-pattern"></div><div class="placeholder-initials">'+escHtml(initials(p.print_name))+'</div></div>';
+      ? '<img class="card-img" src="'+escHtml(p.image_url)+'" alt="'+escHtml(p.print_description||'')+'" loading="lazy" onerror="this.parentElement.innerHTML='<div class=card-img-placeholder><div class=placeholder-pattern></div><div class=placeholder-initials>'+initials(p.print_description)+'</div></div>'">'
+      : '<div class="card-img-placeholder"><div class="placeholder-pattern"></div><div class="placeholder-initials">'+escHtml(initials(p.print_description))+'</div></div>';
 
     const badges = (soldOut?'<span class="badge sold-out-badge">Sold Out</span>':'')
       + (lastOne&&!soldOut?'<span class="badge last-badge">Last 1</span>':'');
@@ -234,13 +234,13 @@ function renderGrid() {
 
     const orderBtn = soldOut
       ? '<span class="order-btn disabled">Sold Out</span>'
-      : '<a href="'+waLink(p.print_name||'', price)+'" target="_blank" class="order-btn">Order via WhatsApp</a>';
+      : '<a href="'+waLink(p.print_description||'', price)+'" target="_blank" class="order-btn">Order via WhatsApp</a>';
 
     return '<div class="product-card'+(soldOut?' sold-out':'')+'">' +
       '<div class="card-img-wrap">'+imgHtml+'<div class="card-badges">'+badges+'</div></div>' +
       '<div class="card-body">' +
         '<div class="card-category">'+escHtml(p.category||'')+'</div>' +
-        '<div class="card-name">'+escHtml(p.print_name||'Unnamed')+'</div>' +
+        '<div class="card-name">'+escHtml(p.print_description||'Unnamed')+'</div>' +
         (p.product_description?'<div class="card-desc">'+escHtml(p.product_description)+'</div>':'<div class="card-desc"></div>') +
         (variants?'<div class="card-variants">'+variants+'</div>':'') +
         '<div class="card-footer"><div class="card-price">'+price+'</div>'+orderBtn+'</div>' +

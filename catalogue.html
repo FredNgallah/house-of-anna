@@ -199,7 +199,7 @@ async function loadAll() {
   const ac = new AbortController();
   const timer = setTimeout(()=>{ ac.abort(); hideOverlay(); }, 6000);
   try {
-    const r = await fetch(SB_URL+'/rest/v1/inventory?select=*&order=print_name.asc&limit=1000', {
+    const r = await fetch(SB_URL+'/rest/v1/inventory?select=*&order=print_description.asc&limit=1000', {
       signal: ac.signal,
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
     });
@@ -248,7 +248,7 @@ function applyFilter() {
   const cat = document.getElementById('filterCat').value;
   const st = document.getElementById('filterStatus').value;
   let filtered = allProducts;
-  if (q) filtered = filtered.filter(p=>(p.print_name||'').toLowerCase().includes(q)||(p.category||'').toLowerCase().includes(q));
+  if (q) filtered = filtered.filter(p=>(p.print_description||'').toLowerCase().includes(q)||(p.category||'').toLowerCase().includes(q));
   if (cat) filtered = filtered.filter(p=>p.category===cat);
   if (st) filtered = filtered.filter(p=>stockStatus(p)===st);
   document.getElementById('recordCount').textContent = filtered.length+' product'+(filtered.length!==1?'s':'');
@@ -268,13 +268,13 @@ function renderGrid(products) {
     const badgeClass = ss==='instock'?'instock':ss==='lowstock'?'lowstock':'outstock';
     const show = p.show_in_catalogue !== false;
     const imgHtml = p.image_url
-      ? '<img class="prod-img" src="'+p.image_url+'" alt="'+escHtml(p.print_name||'')+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
-        + '<div class="prod-img-placeholder" style="display:none">'+escHtml(initials(p.print_name))+'</div>'
-      : '<div class="prod-img-placeholder">'+escHtml(initials(p.print_name))+'</div>';
+      ? '<img class="prod-img" src="'+p.image_url+'" alt="'+escHtml(p.print_description||'')+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+        + '<div class="prod-img-placeholder" style="display:none">'+escHtml(initials(p.print_description))+'</div>'
+      : '<div class="prod-img-placeholder">'+escHtml(initials(p.print_description))+'</div>';
     return '<div class="prod-card'+(show?'':' hidden-cat')+'" id="card-'+p.id+'">' +
       imgHtml +
       '<div class="prod-body">' +
-        '<div class="prod-name">'+escHtml(p.print_name||'Unnamed')+'</div>' +
+        '<div class="prod-name">'+escHtml(p.print_description||'Unnamed')+'</div>' +
         '<div class="prod-cat">'+escHtml(p.category||'—')+'</div>' +
         '<div class="prod-meta">' +
           '<div class="prod-price">'+fmtKES(p.price||p.selling_price||p.unit_price||0)+'</div>' +
