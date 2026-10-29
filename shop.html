@@ -141,16 +141,24 @@ const WHATSAPP_NUMBER = '254779473408';
 let allProducts = [];
 let activeCategory = '';
 
+function hideOverlay() {
+  const el = document.getElementById('loadingOverlay');
+  if (el) el.classList.add('hidden');
+}
+
 async function loadAll() {
+  const ac = new AbortController();
+  const timer = setTimeout(() => { ac.abort(); hideOverlay(); }, 6000);
   try {
     const r = await fetch(SB_URL+'/rest/v1/inventory?select=*&order=print_name.asc&limit=1000', {
+      signal: ac.signal,
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
     });
     const data = r.ok ? await r.json() : [];
-    // Only show products marked for catalogue (or where flag not set yet)
     allProducts = data.filter(p => p.show_in_catalogue !== false);
   } catch(e) { allProducts=[]; }
-  document.getElementById('loadingOverlay').classList.add('hidden');
+  clearTimeout(timer);
+  hideOverlay();
   buildCategoryPills();
   renderGrid();
 }
