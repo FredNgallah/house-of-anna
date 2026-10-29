@@ -267,8 +267,8 @@ function renderGrid(products) {
     const sl = stockLabel(p);
     const badgeClass = ss==='instock'?'instock':ss==='lowstock'?'lowstock':'outstock';
     const show = p.show_in_catalogue !== false;
-    const imgHtml = p.image_url
-      ? '<img class="prod-img" src="'+p.image_url+'" alt="'+escHtml(p.print_description||'')+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+    const imgHtml = p.photo_url
+      ? '<img class="prod-img" src="'+p.photo_url+'" alt="'+escHtml(p.print_description||'')+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
         + '<div class="prod-img-placeholder" style="display:none">'+escHtml(initials(p.print_description))+'</div>'
       : '<div class="prod-img-placeholder">'+escHtml(initials(p.print_description))+'</div>';
     return '<div class="prod-card'+(show?'':' hidden-cat')+'" id="card-'+p.id+'">' +
@@ -302,7 +302,7 @@ function openEdit(id) {
   if (!p) return;
   editingId = id;
   document.getElementById('editProductId').value = id;
-  document.getElementById('editImageUrl').value = p.image_url||'';
+  document.getElementById('editImageUrl').value = p.photo_url||'';
   document.getElementById('editDesc').value = p.product_description||'';
   document.getElementById('editSizes').value = p.sizes_available||'';
   document.getElementById('editColours').value = p.colours_variants||'';
@@ -323,7 +323,7 @@ async function saveEdit() {
   const msg = document.getElementById('editMsg');
   try {
     const payload = {
-      image_url: document.getElementById('editImageUrl').value.trim()||null,
+      photo_url: document.getElementById('editImageUrl').value.trim()||null,
       product_description: document.getElementById('editDesc').value.trim()||null,
       sizes_available: document.getElementById('editSizes').value.trim()||null,
       colours_variants: document.getElementById('editColours').value.trim()||null,

@@ -222,8 +222,8 @@ function renderGrid() {
     const lastOne = net === 1;
     const price = fmtKES(p.price||p.selling_price||p.unit_price||0);
 
-    const imgHtml = p.image_url
-      ? '<img class="card-img" src="'+escHtml(p.image_url)+'" alt="'+escHtml(p.print_description||'')+'" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+    const imgHtml = p.photo_url
+      ? '<img class="card-img" src="'+escHtml(p.photo_url)+'" alt="'+escHtml(p.print_description||'')+'" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
         + '<div class="card-img-placeholder" style="display:none"><div class="placeholder-pattern"></div><div class="placeholder-initials">'+escHtml(initials(p.print_description))+'</div></div>'
       : '<div class="card-img-placeholder"><div class="placeholder-pattern"></div><div class="placeholder-initials">'+escHtml(initials(p.print_description))+'</div></div>';
 
