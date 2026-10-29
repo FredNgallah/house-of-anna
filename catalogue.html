@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
 <title>Catalogue — House of Anna</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
@@ -193,13 +195,17 @@ function hideOverlay() {
 }
 
 async function loadAll() {
-  // Hard timeout — always hide overlay after 8s even if fetch hangs
-  const timer = setTimeout(hideOverlay, 8000);
+  // AbortController gives a hard 6s fetch timeout; hideOverlay always fires
+  const ac = new AbortController();
+  const timer = setTimeout(()=>{ ac.abort(); hideOverlay(); }, 6000);
   try {
-    const r = await sbFetch('/rest/v1/inventory?select=*&order=print_name.asc&limit=1000');
+    const r = await fetch(SB_URL+'/rest/v1/inventory?select=*&order=print_name.asc&limit=1000', {
+      signal: ac.signal,
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    });
     if (!r.ok) { const e=await r.json().catch(()=>{}); console.warn('Catalogue fetch error:',e); throw new Error('HTTP '+r.status); }
     allProducts = await r.json();
-  } catch(e) { console.warn('loadAll error:', e); allProducts=[]; }
+  } catch(e) { console.warn('loadAll error:', e.name, e.message); allProducts=[]; }
   clearTimeout(timer);
   hideOverlay();
   // populate category filter
