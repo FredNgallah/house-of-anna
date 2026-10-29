@@ -268,7 +268,7 @@ function renderGrid(products) {
     const badgeClass = ss==='instock'?'instock':ss==='lowstock'?'lowstock':'outstock';
     const show = p.show_in_catalogue !== false;
     const imgHtml = p.image_url
-      ? '<img class="prod-img" src="'+p.image_url+'" alt="'+escHtml(p.print_name||'')+'" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">'
+      ? '<img class="prod-img" src="'+p.image_url+'" alt="'+escHtml(p.print_name||'')+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
         + '<div class="prod-img-placeholder" style="display:none">'+escHtml(initials(p.print_name))+'</div>'
       : '<div class="prod-img-placeholder">'+escHtml(initials(p.print_name))+'</div>';
     return '<div class="prod-card'+(show?'':' hidden-cat')+'" id="card-'+p.id+'">' +
@@ -284,8 +284,8 @@ function renderGrid(products) {
         (p.sizes_available ? '<div style="font-size:.7rem;color:var(--text2);margin-bottom:4px;">Sizes: '+escHtml(p.sizes_available)+'</div>' : '') +
         (p.colours_variants ? '<div style="font-size:.7rem;color:var(--text2);margin-bottom:10px;">Colours: '+escHtml(p.colours_variants)+'</div>' : '') +
         '<div class="prod-actions">' +
-          '<button class="btn-edit" onclick="openEdit(''+p.id+'')">Edit Details</button>' +
-          '<label class="toggle-vis"><input type="checkbox"'+(show?' checked':'')+ ' onchange="toggleVisibility(''+p.id+'',this.checked)"/> Show in Shop</label>' +
+          '<button class="btn-edit" onclick="openEdit(\''+p.id+'\')">Edit Details</button>' +
+          '<label class="toggle-vis"><input type="checkbox"'+(show?' checked':'')+ ' onchange="toggleVisibility(\''+p.id+'\',this.checked)"/> Show in Shop</label>' +
         '</div>' +
       '</div>' +
     '</div>';
