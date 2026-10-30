@@ -244,7 +244,7 @@ async function loadAll() {
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
     });
     const data = r.ok ? await r.json() : [];
-    allProducts = data.filter(p => p.show_in_catalogue !== false);
+    allProducts = data.filter(p => p.show_in_catalogue !== false && ((Number(p.total_qty_stocked)||0)-(Number(p.reserved_qty)||0)) > 0);
   } catch(e) { allProducts=[]; }
   clearTimeout(timer);
   hideOverlay();
