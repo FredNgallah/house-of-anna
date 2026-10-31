@@ -70,16 +70,25 @@ body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans
 /* EDIT MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.hidden{display:none;}
-.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:100%;max-width:580px;max-height:92vh;overflow-y:auto;}
 .modal-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--border2);}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
 .form-group label{font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);}
 .form-group input,.form-group textarea{background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:.83rem;font-family:'Plus Jakarta Sans',sans-serif;padding:9px 12px;outline:none;transition:border-color .18s;}
 .form-group input:focus,.form-group textarea:focus{border-color:rgba(196,154,44,.5);}
 .form-group textarea{resize:vertical;min-height:72px;}
+.form-group-inline{flex-direction:row;align-items:center;justify-content:space-between;}
+.toggle-big{position:relative;display:inline-flex;align-items:center;cursor:pointer;}
+.toggle-big input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-track{width:42px;height:22px;background:rgba(196,154,44,.15);border:1px solid var(--border);border-radius:99px;transition:all .2s;display:block;}
+.toggle-big input:checked+.toggle-track{background:rgba(196,154,44,.35);border-color:rgba(196,154,44,.6);}
+.toggle-track::after{content:'';position:absolute;width:16px;height:16px;background:var(--text3);border-radius:50%;top:3px;left:3px;transition:all .2s;}
+.toggle-big input:checked+.toggle-track::after{background:var(--gold);transform:translateX(20px);}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
 .btn-primary{padding:9px 22px;background:rgba(196,154,44,.18);border:1px solid rgba(196,154,44,.4);border-radius:7px;color:var(--gold);font-size:.82rem;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s;}
 .btn-primary:hover{background:rgba(196,154,44,.3);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
 .btn-secondary{padding:9px 18px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:.82rem;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;}
 .form-msg{font-size:.78rem;padding:7px 12px;border-radius:6px;margin-top:8px;display:none;}
 .form-msg.error{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;display:block;}
@@ -98,28 +107,60 @@ body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans
 
 <div class="modal-overlay hidden" id="editModal">
   <div class="modal">
-    <div class="modal-title">Edit Product Details</div>
+    <div class="modal-title" id="editModalTitle">Edit Product Details</div>
     <input type="hidden" id="editProductId"/>
-    <div class="form-group">
-      <label>Image URL</label>
-      <input type="url" id="editImageUrl" placeholder="https://… (paste a hosted image link)"/>
+    <div class="form-row-2">
+      <div class="form-group">
+        <label>Product Name</label>
+        <input type="text" id="editName" placeholder="e.g. Amara Wrap Dress"/>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <input type="text" id="editCategory" placeholder="e.g. Dresses"/>
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-group">
+        <label>Selling Price (KES)</label>
+        <input type="number" id="editPrice" placeholder="0" min="0" step="50"/>
+      </div>
+      <div class="form-group form-group-inline">
+        <label>Show in Shop</label>
+        <label class="toggle-big"><input type="checkbox" id="editShowInShop"/> <span class="toggle-track"></span></label>
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-group">
+        <label>Total Qty Stocked</label>
+        <input type="number" id="editQtyStocked" placeholder="0" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>Reserved Qty</label>
+        <input type="number" id="editQtyReserved" placeholder="0" min="0"/>
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-group">
+        <label>Sizes Available</label>
+        <input type="text" id="editSizes" placeholder="e.g. S, M, L, XL, Free Size"/>
+      </div>
+      <div class="form-group">
+        <label>Colours / Variants</label>
+        <input type="text" id="editColours" placeholder="e.g. Black, Nude, Emerald"/>
+      </div>
     </div>
     <div class="form-group">
       <label>Product Description</label>
       <textarea id="editDesc" placeholder="Brief description shown in the shop…"></textarea>
     </div>
     <div class="form-group">
-      <label>Sizes Available</label>
-      <input type="text" id="editSizes" placeholder="e.g. S, M, L, XL, Free Size"/>
-    </div>
-    <div class="form-group">
-      <label>Colours / Variants</label>
-      <input type="text" id="editColours" placeholder="e.g. Black, Nude, Emerald"/>
+      <label>Image URL</label>
+      <input type="url" id="editImageUrl" placeholder="https://… (paste a hosted image link)"/>
     </div>
     <div id="editMsg" class="form-msg"></div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn-primary" onclick="saveEdit()">Save Changes</button>
+      <button class="btn-primary" id="editSaveBtn" onclick="saveEdit()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -298,14 +339,21 @@ function escHtml(s) {
 }
 
 function openEdit(id) {
-  const p = allProducts.find(x=>x.id===id);
+  const p = allProducts.find(x=>String(x.id)===String(id));
   if (!p) return;
   editingId = id;
   document.getElementById('editProductId').value = id;
-  document.getElementById('editImageUrl').value = p.photo_url||'';
-  document.getElementById('editDesc').value = p.product_description||'';
+  document.getElementById('editModalTitle').textContent = 'Edit — '+(p.print_description||'Product');
+  document.getElementById('editName').value = p.print_description||'';
+  document.getElementById('editCategory').value = p.category||'';
+  document.getElementById('editPrice').value = p.selling_price||p.price||p.unit_price||'';
+  document.getElementById('editShowInShop').checked = p.show_in_catalogue !== false;
+  document.getElementById('editQtyStocked').value = p.total_qty_stocked||'';
+  document.getElementById('editQtyReserved').value = p.reserved_qty||'';
   document.getElementById('editSizes').value = p.sizes_available||'';
   document.getElementById('editColours').value = p.colours_variants||'';
+  document.getElementById('editDesc').value = p.product_description||'';
+  document.getElementById('editImageUrl').value = p.photo_url||'';
   document.getElementById('editMsg').className='form-msg';
   document.getElementById('editMsg').textContent='';
   document.getElementById('editModal').classList.remove('hidden');
@@ -318,25 +366,34 @@ function closeModal() {
 
 async function saveEdit() {
   if (!editingId) return;
-  const btn = document.querySelector('.btn-primary');
+  const btn = document.getElementById('editSaveBtn');
   btn.textContent='Saving…'; btn.disabled=true;
   const msg = document.getElementById('editMsg');
   try {
+    const priceVal = parseFloat(document.getElementById('editPrice').value)||null;
+    const qtyStocked = parseInt(document.getElementById('editQtyStocked').value,10);
+    const qtyReserved = parseInt(document.getElementById('editQtyReserved').value,10);
     const payload = {
-      photo_url: document.getElementById('editImageUrl').value.trim()||null,
-      product_description: document.getElementById('editDesc').value.trim()||null,
+      print_description: document.getElementById('editName').value.trim()||null,
+      category: document.getElementById('editCategory').value.trim()||null,
+      selling_price: priceVal,
+      show_in_catalogue: document.getElementById('editShowInShop').checked,
+      total_qty_stocked: isNaN(qtyStocked)?null:qtyStocked,
+      reserved_qty: isNaN(qtyReserved)?0:qtyReserved,
       sizes_available: document.getElementById('editSizes').value.trim()||null,
       colours_variants: document.getElementById('editColours').value.trim()||null,
+      product_description: document.getElementById('editDesc').value.trim()||null,
+      photo_url: document.getElementById('editImageUrl').value.trim()||null,
     };
     const r = await sbFetch('/rest/v1/inventory?id=eq.'+editingId, {
       method:'PATCH', prefer:'return=representation', body:JSON.stringify(payload)
     });
     if (!r.ok) { const err=await r.json().catch(()=>({})); throw new Error(err.message||'HTTP '+r.status); }
     const [updated] = await r.json();
-    const idx = allProducts.findIndex(p=>p.id===editingId);
+    const idx = allProducts.findIndex(p=>String(p.id)===String(editingId));
     if (idx>=0) allProducts[idx]={...allProducts[idx],...updated};
-    msg.className='form-msg success'; msg.textContent='Saved!';
-    setTimeout(()=>{ closeModal(); applyFilter(); },800);
+    msg.className='form-msg success'; msg.textContent='Saved ✓';
+    setTimeout(()=>{ closeModal(); applyFilter(); },700);
   } catch(e) {
     msg.className='form-msg error'; msg.textContent='Error: '+e.message;
   } finally { btn.textContent='Save Changes'; btn.disabled=false; }
