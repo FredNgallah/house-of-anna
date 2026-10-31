@@ -336,9 +336,7 @@ function renderGrid() {
     const variants = (p.sizes_available?'<div class="variant-row"><strong>Sizes</strong>'+escHtml(p.sizes_available)+'</div>':'')
       + (p.colours_variants?'<div class="variant-row"><strong>Colours</strong>'+escHtml(p.colours_variants)+'</div>':'');
 
-    const orderBtn = soldOut
-      ? '<span class="order-btn disabled">Sold Out</span>'
-      : '<a href="'+waLink(p.print_description||'', price)+'" target="_blank" class="order-btn">Order via WhatsApp</a>';
+    const orderBtn = '<a href="'+waLink(p.print_description||'', price)+'" target="_blank" class="order-btn">Order via WhatsApp</a>';
 
     return '<div class="product-card">' +
       '<div class="card-img-wrap">'+imgHtml+'<div class="card-badges">'+badges+'</div></div>' +
