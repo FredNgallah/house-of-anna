@@ -97,6 +97,17 @@ body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans
 .spinner{width:36px;height:36px;border:3px solid rgba(196,154,44,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .loading-overlay.hidden{display:none;}
+/* IMAGE DRAG-DROP */
+.img-drop-zone{border:2px dashed var(--border);border-radius:10px;min-height:130px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:border-color .2s,background .2s;}
+.img-drop-zone:hover,.img-drop-zone.dragover{border-color:rgba(196,154,44,.5);background:rgba(196,154,44,.04);}
+.img-drop-zone.has-image{border-style:solid;border-color:rgba(196,154,44,.4);min-height:160px;padding:0;}
+.img-drop-prompt{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px;pointer-events:none;}
+.img-drop-icon{font-size:1.8rem;opacity:.35;}
+.img-drop-text{font-size:.77rem;color:var(--text3);line-height:1.5;text-align:center;}
+.img-drop-sub{font-size:.67rem;color:var(--text3);opacity:.65;}
+.img-drop-preview{width:100%;height:160px;object-fit:contain;display:none;background:var(--card2);}
+.img-drop-clear{position:absolute;top:7px;right:7px;width:26px;height:26px;background:rgba(0,0,0,.75);border:none;border-radius:50%;color:#fff;font-size:.78rem;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:2;line-height:1;}
+.img-upload-status{font-size:.72rem;min-height:17px;margin-top:5px;}
 </style>
 </head>
 <body>
@@ -154,8 +165,18 @@ body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans
       <textarea id="editDesc" placeholder="Brief description shown in the shop…"></textarea>
     </div>
     <div class="form-group">
-      <label>Image URL</label>
-      <input type="url" id="editImageUrl" placeholder="https://… (paste a hosted image link)"/>
+      <label>Product Photo</label>
+      <div class="img-drop-zone" id="imgDropZone" onclick="document.getElementById('imgFileInput').click()">
+        <img class="img-drop-preview" id="imgDropPreview" alt="Preview"/>
+        <button class="img-drop-clear" id="imgDropClear" onclick="clearImg(event)" title="Remove photo">✕</button>
+        <div class="img-drop-prompt" id="imgDropPrompt">
+          <div class="img-drop-icon">📷</div>
+          <div class="img-drop-text">Drag &amp; drop photo here<br>or tap to choose from device</div>
+          <div class="img-drop-sub">JPG or PNG · max 5 MB</div>
+        </div>
+      </div>
+      <input type="file" id="imgFileInput" accept="image/jpeg,image/png,image/webp" style="display:none"/>
+      <div class="img-upload-status" id="imgUploadStatus"></div>
     </div>
     <div id="editMsg" class="form-msg"></div>
     <div class="modal-actions">
@@ -220,6 +241,7 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 let allProducts = [];
 let editingId = null;
+let pendingPhotoUrl = null; // set after a successful storage upload
 
 function sbFetch(path, opts={}) {
   const isWrite = opts.method && opts.method !== 'GET';
@@ -338,10 +360,84 @@ function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+/* ── Image drag-drop helpers ─────────────────────────────── */
+function initImgDrop() {
+  const zone = document.getElementById('imgDropZone');
+  const input = document.getElementById('imgFileInput');
+  zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', ()=>zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e=>{ e.preventDefault(); zone.classList.remove('dragover'); handleImgFile(e.dataTransfer.files[0]); });
+  input.addEventListener('change', ()=>handleImgFile(input.files[0]));
+}
+
+async function handleImgFile(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { setImgStatus('Only image files are allowed.','err'); return; }
+  if (file.size > 5*1024*1024) { setImgStatus('File too large — max 5 MB.','err'); return; }
+  // Show local preview instantly
+  const reader = new FileReader();
+  reader.onload = e => showImgPreview(e.target.result);
+  reader.readAsDataURL(file);
+  setImgStatus('Uploading…');
+  try {
+    const url = await uploadToStorage(file);
+    pendingPhotoUrl = url;
+    setImgStatus('✓ Photo ready');
+  } catch(e) {
+    setImgStatus('Upload failed: '+e.message,'err');
+    pendingPhotoUrl = null;
+  }
+}
+
+async function uploadToStorage(file) {
+  const ext = (file.name.split('.').pop()||'jpg').toLowerCase();
+  const fname = 'product-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.'+ext;
+  const r = await fetch(SB_URL+'/storage/v1/object/product-images/'+fname, {
+    method:'POST',
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},
+    body:file
+  });
+  if (!r.ok) { const e=await r.json().catch(()=>{}); throw new Error((e&&(e.error||e.message))||'HTTP '+r.status); }
+  return SB_URL+'/storage/v1/object/public/product-images/'+fname;
+}
+
+function showImgPreview(src) {
+  const prev = document.getElementById('imgDropPreview');
+  const prompt = document.getElementById('imgDropPrompt');
+  const clr = document.getElementById('imgDropClear');
+  const zone = document.getElementById('imgDropZone');
+  prev.src=src; prev.style.display='block';
+  prompt.style.display='none';
+  clr.style.display='flex';
+  zone.classList.add('has-image');
+}
+
+function clearImg(e) {
+  e.stopPropagation();
+  pendingPhotoUrl = null;
+  const prev = document.getElementById('imgDropPreview');
+  const prompt = document.getElementById('imgDropPrompt');
+  const clr = document.getElementById('imgDropClear');
+  const zone = document.getElementById('imgDropZone');
+  prev.src=''; prev.style.display='none';
+  prompt.style.display='flex';
+  clr.style.display='none';
+  zone.classList.remove('has-image');
+  document.getElementById('imgUploadStatus').textContent='';
+  document.getElementById('imgFileInput').value='';
+}
+
+function setImgStatus(msg, type) {
+  const el = document.getElementById('imgUploadStatus');
+  el.textContent=msg;
+  el.style.color = type==='err'?'#f87171':'var(--gold)';
+}
+
 function openEdit(id) {
   const p = allProducts.find(x=>String(x.id)===String(id));
   if (!p) return;
   editingId = id;
+  pendingPhotoUrl = null;
   document.getElementById('editProductId').value = id;
   document.getElementById('editModalTitle').textContent = 'Edit — '+(p.print_description||'Product');
   document.getElementById('editName').value = p.print_description||'';
@@ -353,7 +449,14 @@ function openEdit(id) {
   document.getElementById('editSizes').value = p.sizes_available||'';
   document.getElementById('editColours').value = p.colours_variants||'';
   document.getElementById('editDesc').value = p.product_description||'';
-  document.getElementById('editImageUrl').value = p.photo_url||'';
+  // Show existing photo in drop zone (if any)
+  if (p.photo_url) {
+    showImgPreview(p.photo_url);
+    setImgStatus('Existing photo loaded');
+    pendingPhotoUrl = p.photo_url;
+  } else {
+    clearImg({stopPropagation:()=>{}});
+  }
   document.getElementById('editMsg').className='form-msg';
   document.getElementById('editMsg').textContent='';
   document.getElementById('editModal').classList.remove('hidden');
@@ -383,7 +486,7 @@ async function saveEdit() {
       sizes_available: document.getElementById('editSizes').value.trim()||null,
       colours_variants: document.getElementById('editColours').value.trim()||null,
       product_description: document.getElementById('editDesc').value.trim()||null,
-      photo_url: document.getElementById('editImageUrl').value.trim()||null,
+      photo_url: pendingPhotoUrl||null,
     };
     const r = await sbFetch('/rest/v1/inventory?id=eq.'+editingId, {
       method:'PATCH', prefer:'return=representation', body:JSON.stringify(payload)
@@ -412,6 +515,7 @@ async function toggleVisibility(id, show) {
 }
 
 loadAll();
+initImgDrop();
 </script>
 </body>
 </html>
