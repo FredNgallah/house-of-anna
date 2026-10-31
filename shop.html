@@ -73,6 +73,7 @@ body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans
 .variant-row strong{color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-right:4px;}
 .card-footer{display:flex;align-items:center;justify-content:space-between;}
 .card-price{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:var(--gold);}
+.card-stock{font-size:.63rem;color:var(--text3);letter-spacing:.08em;margin-top:2px;}
 .order-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(196,154,44,.12);border:1px solid rgba(196,154,44,.3);border-radius:8px;color:var(--gold);font-size:.72rem;font-weight:600;text-decoration:none;transition:all .2s;white-space:nowrap;}
 .order-btn:hover{background:rgba(196,154,44,.22);}
 .order-btn.disabled{background:transparent;border-color:var(--border);color:var(--text3);pointer-events:none;}
@@ -244,7 +245,20 @@ async function loadAll() {
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
     });
     const data = r.ok ? await r.json() : [];
-    allProducts = data.filter(p => p.show_in_catalogue !== false && ((Number(p.total_qty_stocked)||0)-(Number(p.reserved_qty)||0)) > 0);
+    const visible = data.filter(p => p.show_in_catalogue !== false && ((Number(p.total_qty_stocked)||0)-(Number(p.reserved_qty)||0)) > 0);
+    // Collapse duplicate rows for the same product into one card, summing available stock
+    const seen = new Map();
+    visible.forEach(p => {
+      const key = (p.print_description||'').trim().toLowerCase();
+      if (seen.has(key)) {
+        seen.get(key)._availableQty += (Number(p.total_qty_stocked)||0)-(Number(p.reserved_qty)||0);
+      } else {
+        const clone = Object.assign({}, p);
+        clone._availableQty = (Number(p.total_qty_stocked)||0)-(Number(p.reserved_qty)||0);
+        seen.set(key, clone);
+      }
+    });
+    allProducts = Array.from(seen.values());
   } catch(e) { allProducts=[]; }
   clearTimeout(timer);
   hideOverlay();
@@ -309,9 +323,7 @@ function renderGrid() {
   if (countEl) countEl.textContent = products.length + (products.length===1?' piece':' pieces') + ' in the collection';
 
   grid.innerHTML = products.map(p => {
-    const net = getNetStock(p);
-    const soldOut = net <= 0;
-    const lastOne = net === 1;
+    const qty = p._availableQty || getNetStock(p);
     const price = fmtKES(p.price||p.selling_price||p.unit_price||0);
 
     const imgHtml = p.photo_url
@@ -319,8 +331,7 @@ function renderGrid() {
         + '<div class="card-img-placeholder" style="display:none"><div class="placeholder-pattern"></div><div class="placeholder-initials">'+escHtml(initials(p.print_description))+'</div></div>'
       : '<div class="card-img-placeholder"><div class="placeholder-pattern"></div><div class="placeholder-initials">'+escHtml(initials(p.print_description))+'</div></div>';
 
-    const badges = (soldOut?'<span class="badge sold-out-badge">Sold Out</span>':'')
-      + (lastOne&&!soldOut?'<span class="badge last-badge">Last 1</span>':'');
+    const badges = (qty===1?'<span class="badge last-badge">Last 1</span>':'');
 
     const variants = (p.sizes_available?'<div class="variant-row"><strong>Sizes</strong>'+escHtml(p.sizes_available)+'</div>':'')
       + (p.colours_variants?'<div class="variant-row"><strong>Colours</strong>'+escHtml(p.colours_variants)+'</div>':'');
@@ -329,14 +340,14 @@ function renderGrid() {
       ? '<span class="order-btn disabled">Sold Out</span>'
       : '<a href="'+waLink(p.print_description||'', price)+'" target="_blank" class="order-btn">Order via WhatsApp</a>';
 
-    return '<div class="product-card'+(soldOut?' sold-out':'')+'">' +
+    return '<div class="product-card">' +
       '<div class="card-img-wrap">'+imgHtml+'<div class="card-badges">'+badges+'</div></div>' +
       '<div class="card-body">' +
         '<div class="card-category">'+escHtml(p.category||'')+'</div>' +
         '<div class="card-name">'+escHtml(p.print_description||'Unnamed')+'</div>' +
         (p.product_description?'<div class="card-desc">'+escHtml(p.product_description)+'</div>':'<div class="card-desc"></div>') +
         (variants?'<div class="card-variants">'+variants+'</div>':'') +
-        '<div class="card-footer"><div class="card-price">'+price+'</div>'+orderBtn+'</div>' +
+        '<div class="card-footer"><div><div class="card-price">'+price+'</div><div class="card-stock">'+qty+' available</div></div>'+orderBtn+'</div>' +
       '</div>' +
     '</div>';
   }).join('');
