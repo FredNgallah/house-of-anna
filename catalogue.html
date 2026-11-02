@@ -397,7 +397,7 @@ async function uploadToStorage(file) {
     headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},
     body:file
   });
-  if (!r.ok) { const e=await r.json().catch(()=>{}); throw new Error((e&&(e.error||e.message))||'HTTP '+r.status); }
+  if (!r.ok) { const e=await r.json().catch(()=>{}); throw new Error('HTTP '+r.status+': '+(e&&(e.message||e.error||JSON.stringify(e))||'no details')); }
   return SB_URL+'/storage/v1/object/public/product-images/'+fname;
 }
 
