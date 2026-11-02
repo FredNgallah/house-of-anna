@@ -394,7 +394,7 @@ async function uploadToStorage(file) {
   const fname = 'product-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'.'+ext;
   const r = await fetch(SB_URL+'/storage/v1/object/product-images/'+fname, {
     method:'POST',
-    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/jpeg'},
     body:file
   });
   if (!r.ok) { const e=await r.json().catch(()=>{}); throw new Error('HTTP '+r.status+': '+(e&&(e.message||e.error||JSON.stringify(e))||'no details')); }
