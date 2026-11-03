@@ -357,11 +357,11 @@
 
 <!-- Period Tabs -->
 <div class="period-bar">
-  <button class="period-tab active" data-period="today" onclick="setPeriod('today')">Today</button>
+  <button class="period-tab" data-period="today" onclick="setPeriod('today')">Today</button>
   <button class="period-tab" data-period="week" onclick="setPeriod('week')">This Week</button>
   <button class="period-tab" data-period="month" onclick="setPeriod('month')">This Month</button>
   <button class="period-tab" data-period="ytd" onclick="setPeriod('ytd')">YTD</button>
-  <button class="period-tab" data-period="all" onclick="setPeriod('all')">All Time</button>
+  <button class="period-tab active" data-period="all" onclick="setPeriod('all')">All Time</button>
 </div>
 
 <!-- Main Dashboard -->
@@ -380,42 +380,82 @@
     <div class="kpi-card"><div class="kpi-label">Reserved Units</div><div class="kpi-value purple" id="kpiReserved">—</div><div class="kpi-sub" id="kpiReservedSub">Lipa Polepole plans</div><div class="kpi-accent-bar purple"></div></div>
   </div>
 
-  <!-- Charts Row 1: Revenue Trend + Platform Donut -->
-  <div class="chart-row chart-row-2" style="margin-bottom:16px;">
+  <!-- Charts Row 1: Revenue & Profit vs Orders | DOW | Quarterly -->
+  <div class="chart-row chart-row-3" style="margin-bottom:16px;">
     <div class="chart-card">
       <div class="section-head">
-        <div><div class="section-title">Revenue & Profit Trend</div><div class="section-sub">Monthly performance</div></div>
+        <div><div class="section-title">Revenue & Profit vs Orders</div><div class="section-sub">Monthly trend</div></div>
       </div>
-      <div class="chart-wrap" style="height:240px;">
-        <canvas id="chartRevenue"></canvas>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="chartRevProfOrders"></canvas>
       </div>
     </div>
     <div class="chart-card">
       <div class="section-head">
-        <div><div class="section-title">Sales by Platform</div><div class="section-sub">Channel breakdown</div></div>
+        <div><div class="section-title">Revenue by Day of Week</div><div class="section-sub">Mon – Sun performance</div></div>
       </div>
-      <div class="chart-wrap" style="height:240px;">
-        <canvas id="chartPlatform"></canvas>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="chartDOW"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="section-head">
+        <div><div class="section-title">Sales by Quarter</div><div class="section-sub">Quarterly revenue & orders</div></div>
+      </div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="chartQuarterly"></canvas>
       </div>
     </div>
   </div>
 
-  <!-- Charts Row 2: Salesperson + Category Stock -->
+  <!-- Charts Row 2: Inventory Distribution | Monthly Revenue Comparison -->
+  <div class="chart-row chart-row-2b" style="margin-bottom:16px;">
+    <div class="chart-card">
+      <div class="section-head">
+        <div><div class="section-title">Inventory Distribution</div><div class="section-sub">Available & reserved by category</div></div>
+      </div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="chartInvDist"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="section-head">
+        <div><div class="section-title">Monthly Revenue Comparison</div><div class="section-sub">All-time monthly breakdown</div></div>
+      </div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="chartMonthlyComp"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 3: Peak Sales Days (full width) -->
+  <div class="chart-row" style="margin-bottom:16px;">
+    <div class="chart-card">
+      <div class="section-head">
+        <div><div class="section-title">Peak Sales Days</div><div class="section-sub">Revenue & order volume by day of month (1 – 31)</div></div>
+      </div>
+      <div class="chart-wrap" style="height:200px;">
+        <canvas id="chartPeakDays"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 4: Platform + Salesperson (consolidated) -->
   <div class="chart-row chart-row-2b" style="margin-bottom:28px;">
+    <div class="chart-card">
+      <div class="section-head">
+        <div><div class="section-title">Sales by Platform</div><div class="section-sub">Channel breakdown</div></div>
+      </div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="chartPlatform"></canvas>
+      </div>
+    </div>
     <div class="chart-card">
       <div class="section-head">
         <div><div class="section-title">Sales by Salesperson</div><div class="section-sub">Revenue per team member</div></div>
       </div>
       <div class="chart-wrap" style="height:220px;">
         <canvas id="chartSalesperson"></canvas>
-      </div>
-    </div>
-    <div class="chart-card">
-      <div class="section-head">
-        <div><div class="section-title">Stock by Category</div><div class="section-sub">Available units</div></div>
-      </div>
-      <div class="chart-wrap" style="height:220px;">
-        <canvas id="chartCategory"></canvas>
       </div>
     </div>
   </div>
@@ -478,7 +518,7 @@
   let allSales = [];
   let allInventory = [];
   let allLipaPlans = [];
-  let activePeriod = 'today';
+  let activePeriod = 'all';
   let charts = {};
 
   // ─────────────────────────────────────────
@@ -618,10 +658,16 @@
   function renderAll() {
     const sales = filterSales(allSales);
     renderKPIs(sales);
-    renderRevenueChart(sales);
-    renderPlatformChart(sales);
-    renderSalespersonChart(sales);
-    renderCategoryChart();
+    // Analytics charts (use allSales for full trend; not period-filtered)
+    renderRevProfOrdersChart();
+    renderDOWChart();
+    renderQuarterlyChart();
+    renderInvDistChart();
+    renderMonthlyCompChart();
+    renderPeakDaysChart();
+    // Period-filtered charts
+    renderPlatformChart(sales.length ? sales : allSales);
+    renderSalespersonChart(sales.length ? sales : allSales);
     renderActionCentre(sales);
     renderLedger(sales);
     document.getElementById('periodLabel').textContent = periodLabel();
@@ -694,37 +740,246 @@
   function setText(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
 
   // ─────────────────────────────────────────
-  // REVENUE TREND CHART (Monthly)
+  // REVENUE & PROFIT vs ORDERS (Monthly combo)
   // ─────────────────────────────────────────
-  function renderRevenueChart(sales) {
+  function renderRevProfOrdersChart() {
     const byMonth = {};
     allSales.forEach(s => {
       if (!s.sale_date) return;
       const m = s.sale_date.slice(0,7);
-      if (!byMonth[m]) byMonth[m] = { rev:0, profit:0 };
-      byMonth[m].rev += revenue(s);
-      byMonth[m].profit += profit(s);
+      if (!byMonth[m]) byMonth[m] = { rev:0, prof:0, orders:0 };
+      byMonth[m].rev    += revenue(s);
+      byMonth[m].prof   += profit(s);
+      byMonth[m].orders += 1;
     });
     const months = Object.keys(byMonth).sort().slice(-12);
-    const labels = months.map(m => {
-      const [y,mo] = m.split('-');
-      return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1] + ' ' + y.slice(2);
-    });
-    const revData = months.map(m=>byMonth[m].rev);
-    const profData = months.map(m=>byMonth[m].profit);
+    const MO = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const labels = months.map(m => { const [y,mo] = m.split('-'); return MO[parseInt(mo)-1]+' '+y.slice(2); });
 
-    destroyChart('chartRevenue');
-    const ctx = document.getElementById('chartRevenue').getContext('2d');
-    charts.revenue = new Chart(ctx, {
+    destroyChart('chartRevProfOrders');
+    const ctx = document.getElementById('chartRevProfOrders').getContext('2d');
+    charts.revProfOrders = new Chart(ctx, {
       type: 'bar',
       data: {
         labels,
         datasets: [
-          { label:'Revenue (KES)', data:revData, backgroundColor:'rgba(196,154,44,0.6)', borderColor:'#C49A2C', borderWidth:1, borderRadius:4 },
-          { label:'Profit (KES)', data:profData, type:'line', borderColor:'#10b981', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:0.4 }
+          { label:'Revenue', data:months.map(m=>byMonth[m].rev),    backgroundColor:'rgba(196,154,44,0.55)', borderColor:'#C49A2C', borderWidth:1, borderRadius:4, yAxisID:'y' },
+          { label:'Profit',  data:months.map(m=>byMonth[m].prof),   type:'line', borderColor:'#10b981', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:0.4, yAxisID:'y' },
+          { label:'Orders',  data:months.map(m=>byMonth[m].orders), type:'line', borderColor:'#06b6d4', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:0.4, yAxisID:'y2', borderDash:[4,3] }
         ]
       },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend: { labels:{ color:'#9e9e9e', font:{size:10}, boxWidth:10 } },
+          tooltip: { callbacks: { label: ctx => ctx.dataset.yAxisID==='y2' ? ` ${ctx.dataset.label}: ${ctx.raw}` : ` ${ctx.dataset.label}: ${fmtKES(ctx.raw)}` } }
+        },
+        scales: {
+          x:  { ticks:{color:'#666',font:{size:9}},  grid:{color:'rgba(255,255,255,.04)'} },
+          y:  { ticks:{color:'#666',font:{size:9},callback:v=>'K'+Math.round(v/1000)}, grid:{color:'rgba(255,255,255,.04)'}, position:'left' },
+          y2: { ticks:{color:'#06b6d4',font:{size:9}}, grid:{display:false}, position:'right' }
+        }
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // REVENUE BY DAY OF WEEK
+  // ─────────────────────────────────────────
+  function renderDOWChart() {
+    const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const byDOW = {0:{rev:0,orders:0},1:{rev:0,orders:0},2:{rev:0,orders:0},3:{rev:0,orders:0},4:{rev:0,orders:0},5:{rev:0,orders:0},6:{rev:0,orders:0}};
+    allSales.forEach(s => {
+      if (!s.sale_date) return;
+      const d   = new Date(s.sale_date);
+      const dow = (d.getDay() + 6) % 7; // 0=Mon … 6=Sun
+      byDOW[dow].rev    += revenue(s);
+      byDOW[dow].orders += 1;
+    });
+    destroyChart('chartDOW');
+    const ctx = document.getElementById('chartDOW').getContext('2d');
+    charts.dow = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: DAYS,
+        datasets: [
+          { label:'Revenue', data:DAYS.map((_,i)=>byDOW[i].rev),    backgroundColor:'rgba(196,154,44,0.55)', borderColor:'#C49A2C', borderWidth:1, borderRadius:4, yAxisID:'y' },
+          { label:'Orders',  data:DAYS.map((_,i)=>byDOW[i].orders), type:'line', borderColor:'#06b6d4', backgroundColor:'transparent', borderWidth:2, pointRadius:4, tension:0.4, yAxisID:'y2' }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend: { labels:{ color:'#9e9e9e', font:{size:10}, boxWidth:10 } },
+          tooltip: { callbacks: { label: ctx => ctx.dataset.yAxisID==='y2' ? ` ${ctx.dataset.label}: ${ctx.raw}` : ` ${ctx.dataset.label}: ${fmtKES(ctx.raw)}` } }
+        },
+        scales: {
+          x:  { ticks:{color:'#666',font:{size:10}}, grid:{color:'rgba(255,255,255,.04)'} },
+          y:  { ticks:{color:'#666',font:{size:9},callback:v=>'K'+Math.round(v/1000)}, grid:{color:'rgba(255,255,255,.04)'}, position:'left' },
+          y2: { ticks:{color:'#06b6d4',font:{size:9}}, grid:{display:false}, position:'right' }
+        }
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // SALES BY QUARTER
+  // ─────────────────────────────────────────
+  function renderQuarterlyChart() {
+    const byQtr = {};
+    allSales.forEach(s => {
+      if (!s.sale_date) return;
+      const d = new Date(s.sale_date);
+      const q = Math.floor(d.getMonth() / 3) + 1;
+      const key = `Q${q} ${d.getFullYear()}`;
+      if (!byQtr[key]) byQtr[key] = { rev:0, orders:0 };
+      byQtr[key].rev    += revenue(s);
+      byQtr[key].orders += 1;
+    });
+    const qtrs = Object.keys(byQtr).sort((a,b) => {
+      const ya = parseInt(a.slice(3)), yb = parseInt(b.slice(3));
+      const qa = parseInt(a[1]),       qb = parseInt(b[1]);
+      return ya !== yb ? ya - yb : qa - qb;
+    });
+    destroyChart('chartQuarterly');
+    const ctx = document.getElementById('chartQuarterly').getContext('2d');
+    charts.quarterly = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: qtrs,
+        datasets: [
+          { label:'Revenue', data:qtrs.map(q=>byQtr[q].rev),    backgroundColor:'rgba(139,92,246,0.55)', borderColor:'#8b5cf6', borderWidth:1, borderRadius:4, yAxisID:'y' },
+          { label:'Orders',  data:qtrs.map(q=>byQtr[q].orders), type:'line', borderColor:'#f59e0b', backgroundColor:'transparent', borderWidth:2, pointRadius:4, tension:0.4, yAxisID:'y2' }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend: { labels:{ color:'#9e9e9e', font:{size:10}, boxWidth:10 } },
+          tooltip: { callbacks: { label: ctx => ctx.dataset.yAxisID==='y2' ? ` ${ctx.dataset.label}: ${ctx.raw}` : ` ${ctx.dataset.label}: ${fmtKES(ctx.raw)}` } }
+        },
+        scales: {
+          x:  { ticks:{color:'#666',font:{size:10}}, grid:{color:'rgba(255,255,255,.04)'} },
+          y:  { ticks:{color:'#666',font:{size:9},callback:v=>'K'+Math.round(v/1000)}, grid:{color:'rgba(255,255,255,.04)'}, position:'left' },
+          y2: { ticks:{color:'#f59e0b',font:{size:9}}, grid:{display:false}, position:'right' }
+        }
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // INVENTORY DISTRIBUTION (grouped bar)
+  // ─────────────────────────────────────────
+  function renderInvDistChart() {
+    const cats = {};
+    allInventory.forEach(i => {
+      const cat      = i.category || 'Uncategorised';
+      const stocked  = Number(i.total_qty_stocked) || 0;
+      const reserved = Number(i.reserved_qty) || 0;
+      const avail    = Math.max(0, stocked - reserved);
+      if (!cats[cat]) cats[cat] = { available:0, reserved:0, total:0 };
+      cats[cat].available += avail;
+      cats[cat].reserved  += reserved;
+      cats[cat].total     += stocked;
+    });
+    const labels = Object.keys(cats).sort();
+    destroyChart('chartInvDist');
+    const ctx = document.getElementById('chartInvDist').getContext('2d');
+    charts.invDist = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label:'Available', data:labels.map(c=>cats[c].available), backgroundColor:'rgba(16,185,129,0.6)',  borderColor:'#10b981', borderWidth:1, borderRadius:3 },
+          { label:'Reserved',  data:labels.map(c=>cats[c].reserved),  backgroundColor:'rgba(139,92,246,0.55)', borderColor:'#8b5cf6', borderWidth:1, borderRadius:3 }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend: { labels:{ color:'#9e9e9e', font:{size:10}, boxWidth:10 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} units` } }
+        },
+        scales: {
+          x: { ticks:{color:'#666',font:{size:9},maxRotation:35}, grid:{color:'rgba(255,255,255,.04)'} },
+          y: { ticks:{color:'#666',font:{size:10}}, grid:{color:'rgba(255,255,255,.04)'} }
+        }
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // MONTHLY REVENUE COMPARISON
+  // ─────────────────────────────────────────
+  function renderMonthlyCompChart() {
+    const byMonth = {};
+    allSales.forEach(s => {
+      if (!s.sale_date) return;
+      const m = s.sale_date.slice(0,7);
+      byMonth[m] = (byMonth[m]||0) + revenue(s);
+    });
+    const months = Object.keys(byMonth).sort();
+    const MO = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const labels = months.map(m => { const [y,mo] = m.split('-'); return MO[parseInt(mo)-1]+' '+y.slice(2); });
+    const COLORS = ['#C49A2C','#10b981','#06b6d4','#8b5cf6','#f59e0b','#ef4444','#ec4899','#3b82f6'];
+
+    destroyChart('chartMonthlyComp');
+    const ctx = document.getElementById('chartMonthlyComp').getContext('2d');
+    charts.monthlyComp = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Revenue (KES)',
+          data:  months.map(m=>byMonth[m]),
+          backgroundColor: months.map((_,i)=>COLORS[i%COLORS.length]+'99'),
+          borderColor:     months.map((_,i)=>COLORS[i%COLORS.length]),
+          borderWidth:1, borderRadius:5
+        }]
+      },
       options: chartOpts('KES')
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // PEAK SALES DAYS (day of month 1–31)
+  // ─────────────────────────────────────────
+  function renderPeakDaysChart() {
+    const byDay = {};
+    for (let d = 1; d <= 31; d++) byDay[d] = { rev:0, orders:0 };
+    allSales.forEach(s => {
+      if (!s.sale_date) return;
+      const d = new Date(s.sale_date).getDate();
+      byDay[d].rev    += revenue(s);
+      byDay[d].orders += 1;
+    });
+    const labels  = Object.keys(byDay).map(String);
+    const revData = Object.values(byDay).map(v => v.rev);
+    const ordData = Object.values(byDay).map(v => v.orders);
+
+    destroyChart('chartPeakDays');
+    const ctx = document.getElementById('chartPeakDays').getContext('2d');
+    charts.peakDays = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label:'Revenue', data:revData, backgroundColor:'rgba(196,154,44,0.55)', borderColor:'#C49A2C', borderWidth:1, borderRadius:3, yAxisID:'y' },
+          { label:'Orders',  data:ordData, type:'line', borderColor:'#10b981', backgroundColor:'transparent', borderWidth:2, pointRadius:2, tension:0.4, yAxisID:'y2' }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend: { labels:{ color:'#9e9e9e', font:{size:10}, boxWidth:10 } },
+          tooltip: { callbacks: { label: ctx => ctx.dataset.yAxisID==='y2' ? ` ${ctx.dataset.label}: ${ctx.raw}` : ` ${ctx.dataset.label}: ${fmtKES(ctx.raw)}` } }
+        },
+        scales: {
+          x:  { ticks:{color:'#666',font:{size:9}}, grid:{color:'rgba(255,255,255,.04)'} },
+          y:  { ticks:{color:'#666',font:{size:9},callback:v=>'K'+Math.round(v/1000)}, grid:{color:'rgba(255,255,255,.04)'}, position:'left' },
+          y2: { ticks:{color:'#10b981',font:{size:9}}, grid:{display:false}, position:'right' }
+        }
+      }
     });
   }
 
@@ -799,32 +1054,6 @@
         <div class="leader-amt">${fmtKES(x[1])}</div>
       </div>
     `).join('');
-  }
-
-  // ─────────────────────────────────────────
-  // CATEGORY STOCK BAR
-  // ─────────────────────────────────────────
-  function renderCategoryChart() {
-    const byCat = {};
-    allInventory.forEach(i => {
-      const cat = i.category || 'Uncategorised';
-      byCat[cat] = (byCat[cat]||0) + (Number(i.total_qty_stocked)||0);
-    });
-    const sorted = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
-    const labels = sorted.map(x=>x[0]);
-    const data = sorted.map(x=>x[1]);
-    const colors = ['#C49A2C','#10b981','#f59e0b','#06b6d4','#8b5cf6','#ef4444'];
-
-    destroyChart('chartCategory');
-    const ctx = document.getElementById('chartCategory').getContext('2d');
-    charts.category = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [{ label:'Units in Stock', data, backgroundColor: labels.map((_,i)=>colors[i%colors.length]+'aa'), borderColor: labels.map((_,i)=>colors[i%colors.length]), borderWidth:1, borderRadius:5 }]
-      },
-      options: chartOpts('units')
-    });
   }
 
   // ─────────────────────────────────────────

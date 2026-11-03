@@ -296,6 +296,32 @@
     .loader-text { font-size: 13px; color: var(--muted); letter-spacing: 0.06em; }
 
     .empty-row td { text-align: center; color: var(--dim); padding: 40px; font-size: 13px; }
+
+    /* ── Sales Balances Block ─────────────────────────── */
+    .balances-block {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; margin: 8px 0 18px; background: var(--border);
+      border-radius: 14px; overflow: hidden;
+    }
+    .balance-item {
+      background: var(--card); padding: 18px 22px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .balance-label {
+      font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase;
+      color: var(--gold); font-weight: 700; font-family: var(--sans);
+    }
+    .balance-value {
+      font-family: var(--serif); font-size: 28px; font-weight: 700;
+      color: var(--text); line-height: 1.1; letter-spacing: -0.02em;
+    }
+    .balance-value.neg { color: #ef4444; }
+    .balance-sub {
+      font-size: 10px; color: var(--dim); font-family: var(--sans);
+    }
+    @media (max-width: 640px) {
+      .balances-block { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -385,6 +411,25 @@
       <div class="kpi-label">Total Discounts</div>
       <div class="kpi-value" id="kDiscounts">—</div>
       <div class="kpi-sub" id="kDiscountSub">—</div>
+    </div>
+  </div>
+
+  <!-- SALES BALANCES -->
+  <div class="balances-block">
+    <div class="balance-item">
+      <div class="balance-label">Weekly Sales</div>
+      <div class="balance-value" id="bWeekly">—</div>
+      <div class="balance-sub" id="bWeeklySub">This week</div>
+    </div>
+    <div class="balance-item">
+      <div class="balance-label">Monthly Sales</div>
+      <div class="balance-value" id="bMonthly">—</div>
+      <div class="balance-sub" id="bMonthlySub">This month</div>
+    </div>
+    <div class="balance-item">
+      <div class="balance-label">YTD Sales</div>
+      <div class="balance-value" id="bYTD">—</div>
+      <div class="balance-sub" id="bYTDSub">Year to date</div>
     </div>
   </div>
 
@@ -667,6 +712,47 @@ function renderKPIs(sales) {
   document.getElementById('kAvgTicket').textContent  = txns > 0 ? kes(avgTicket) : '—';
   document.getElementById('kDiscounts').textContent  = kes(disc);
   document.getElementById('kDiscountSub').textContent = gross > 0 ? `${fmt(disc/gross*100,1)}% of gross` : '—';
+}
+
+// ── renderBalances ─────────────────────────────────────────
+function renderBalances() {
+  const now = new Date();
+  const y   = now.getFullYear();
+  const m   = String(now.getMonth() + 1).padStart(2, '0');
+  const todayStr = now.toISOString().slice(0, 10);
+
+  // Week start = most recent Monday
+  const dow = now.getDay();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+  weekStart.setHours(0, 0, 0, 0);
+  const weekStartStr = weekStart.toISOString().slice(0, 10);
+
+  const monthStr = `${y}-${m}`;
+  const yearStr  = String(y);
+
+  let weekly = 0, monthly = 0, ytd = 0;
+  let wCount = 0, mCount = 0, yCount = 0;
+
+  allSales.forEach(s => {
+    if (!s.sale_date) return;
+    const d   = s.sale_date.slice(0, 10);
+    const rev = parseNum(s.selling_price) - parseNum(s.discount);
+    if (d >= weekStartStr)              { weekly  += rev; wCount++; }
+    if (d.slice(0, 7) === monthStr)     { monthly += rev; mCount++; }
+    if (d.slice(0, 4) === yearStr)      { ytd     += rev; yCount++; }
+  });
+
+  function setBalance(valId, subId, amount, count, label) {
+    const el = document.getElementById(valId);
+    el.textContent = kes(amount);
+    el.className   = 'balance-value' + (amount < 0 ? ' neg' : '');
+    document.getElementById(subId).textContent = `${count} transaction${count !== 1 ? 's' : ''} ${label}`;
+  }
+
+  setBalance('bWeekly',  'bWeeklySub',  weekly,  wCount, 'this week');
+  setBalance('bMonthly', 'bMonthlySub', monthly, mCount, 'this month');
+  setBalance('bYTD',     'bYTDSub',     ytd,     yCount, `in ${y}`);
 }
 
 // ── renderTable ────────────────────────────────────────────
@@ -975,6 +1061,7 @@ async function loadAll() {
 
     populateFilters(allSales);
     applyFilters();
+    renderBalances();
     renderCharts(allSales);
 
   } catch(e) {
