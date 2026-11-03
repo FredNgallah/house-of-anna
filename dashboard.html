@@ -482,28 +482,6 @@
     </div>
   </div>
 
-  <!-- Recent Sales Ledger -->
-  <div class="section-head">
-    <div><div class="section-title">Sales Ledger</div><div class="section-sub" id="ledgerSub">Recent transactions</div></div>
-  </div>
-  <div class="ledger-card">
-    <table class="ledger-table" id="ledgerTable">
-      <thead>
-        <tr>
-          <th>Invoice</th>
-          <th>Date</th>
-          <th>Product</th>
-          <th>Customer</th>
-          <th>Platform</th>
-          <th>Salesperson</th>
-          <th>Payment</th>
-          <th>Revenue</th>
-          <th>Profit</th>
-        </tr>
-      </thead>
-      <tbody><tr><td colspan="9" class="empty-state">Loading transactions…</td></tr></tbody>
-    </table>
-  </div>
 
 </div><!-- /.dash -->
 
@@ -669,7 +647,6 @@
     renderPlatformChart(sales.length ? sales : allSales);
     renderSalespersonChart(sales.length ? sales : allSales);
     renderActionCentre(sales);
-    renderLedger(sales);
     document.getElementById('periodLabel').textContent = periodLabel();
   }
 
@@ -1098,34 +1075,7 @@
     }).join('');
   }
 
-  // ─────────────────────────────────────────
-  // SALES LEDGER
-  // ─────────────────────────────────────────
-  function renderLedger(sales) {
-    document.getElementById('ledgerSub').textContent = sales.length + ' transactions — ' + periodLabel();
-    const tbody = document.querySelector('#ledgerTable tbody');
-    if (!sales.length) {
-      tbody.innerHTML='<tr><td colspan="9" class="empty-state">No transactions in this period</td></tr>'; return;
-    }
-    tbody.innerHTML = sales.slice(0,50).map(s => {
-      const rev = revenue(s);
-      const pft = profit(s);
-      const pftClass = pft>=0?'profit-pos':'profit-neg';
-      const payClass = (s.payment_method||'').toLowerCase().includes('mpesa')||s.payment_method==='M-Pesa'?'mpesa':'cash';
-      const dateStr = s.sale_date ? new Date(s.sale_date).toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
-      return `<tr>
-        <td><span class="inv-tag">${s.invoice_number||'—'}</span></td>
-        <td style="color:var(--muted);white-space:nowrap">${dateStr}</td>
-        <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.print_name||s.product_id||'—'}</td>
-        <td style="color:var(--muted)">${s.customer_name||'—'}</td>
-        <td style="color:var(--muted)">${s.platform||'—'}</td>
-        <td>${s.salesperson||'—'}</td>
-        <td><span class="pay-tag ${payClass}">${s.payment_method||'—'}</span></td>
-        <td style="font-weight:600;color:var(--gold)">${fmtKES(rev)}</td>
-        <td class="${pftClass}">${pft>=0?'+':''}${fmtKES(pft)}</td>
-      </tr>`;
-    }).join('');
-  }
+
 
   // ─────────────────────────────────────────
   // UI HELPERS
