@@ -1226,6 +1226,9 @@
             <button type="button" class="btn-secondary" id="refreshTableBtn" title="Refresh Table">
               <span>↻ Refresh</span>
             </button>
+            <button type="button" class="btn-secondary" id="reconcileStockBtn" title="Mark sold items as Sold Out based on sales records" style="border-color:#C49A2C;color:#C49A2C;">
+              <span>⚡ Reconcile Stock</span>
+            </button>
           </div>
         </div>
 
@@ -2185,6 +2188,80 @@ using (true);
       document.getElementById('filterCategory').addEventListener('change', renderInventoryTable);
       document.getElementById('filterStatus').addEventListener('change', renderInventoryTable);
       document.getElementById('refreshTableBtn').addEventListener('click', loadInventory);
+
+      document.getElementById('reconcileStockBtn').addEventListener('click', async () => {
+        if (!isConnectedToSupabase || !supabaseClient) {
+          showToast('Reconcile requires a live Supabase connection.', 'error');
+          return;
+        }
+        const btn = document.getElementById('reconcileStockBtn');
+        btn.disabled = true;
+        btn.querySelector('span').textContent = '⏳ Reconciling…';
+
+        try {
+          // 1. Fetch all product_ids that have been sold
+          const { data: salesData, error: salesErr } = await supabaseClient
+            .from('sales')
+            .select('product_id');
+          if (salesErr) throw salesErr;
+
+          // Build a set of sold product IDs
+          const soldIds = new Set((salesData || []).map(s => s.product_id).filter(Boolean));
+
+          // 2. Get all Available inventory items
+          const { data: invData, error: invErr } = await supabaseClient
+            .from('inventory')
+            .select('product_id, total_qty_stocked, status')
+            .eq('status', 'Available');
+          if (invErr) throw invErr;
+
+          // 3. Find items that should be Sold Out
+          const toUpdate = (invData || []).filter(item => soldIds.has(item.product_id));
+
+          if (toUpdate.length === 0) {
+            showToast('All sold items are already marked Sold Out — nothing to update.', 'success');
+            btn.disabled = false;
+            btn.querySelector('span').textContent = '⚡ Reconcile Stock';
+            return;
+          }
+
+          // 4. Confirm before updating
+          const confirmed = confirm(
+            `Reconcile will mark ${toUpdate.length} item(s) as Sold Out because they appear in your sales records.\n\nProceed?`
+          );
+          if (!confirmed) {
+            btn.disabled = false;
+            btn.querySelector('span').textContent = '⚡ Reconcile Stock';
+            return;
+          }
+
+          // 5. Update in batches of 50
+          let successCount = 0;
+          const batchSize = 50;
+          for (let i = 0; i < toUpdate.length; i += batchSize) {
+            const batch = toUpdate.slice(i, i + batchSize);
+            const ids = batch.map(item => item.product_id);
+            const { error: upErr } = await supabaseClient
+              .from('inventory')
+              .update({ total_qty_stocked: 0, status: 'Sold Out' })
+              .in('product_id', ids);
+            if (upErr) {
+              console.error('Batch update error:', upErr);
+            } else {
+              successCount += batch.length;
+            }
+          }
+
+          showToast(`✅ Reconciled: ${successCount} item(s) marked Sold Out.`, 'success');
+          await loadInventory();
+        } catch (err) {
+          console.error('Reconcile error:', err);
+          showToast('Reconcile failed: ' + err.message, 'error');
+        } finally {
+          btn.disabled = false;
+          btn.querySelector('span').textContent = '⚡ Reconcile Stock';
+        }
+      });
 
       // Settings Modal
       const settingsModal = document.getElementById('settingsModal');
