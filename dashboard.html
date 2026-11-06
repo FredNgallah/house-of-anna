@@ -460,9 +460,27 @@
     </div>
   </div>
 
+  <!-- Row 5: Customer Region + Supplier Performance -->
+  <div class="chart-row chart-row-2b" style="margin-bottom:16px;">
+    <div class="chart-card">
+      <div class="section-head">
+        <div><div class="section-title">Customer Analysis by Region</div><div class="section-sub">Revenue &amp; customer count by county</div></div>
+      </div>
+      <div class="chart-wrap" style="height:240px;">
+        <canvas id="chartCustomerRegion"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="section-head">
+        <div><div class="section-title">Supplier Performance &amp; Ranking</div><div class="section-sub">Units sold · revenue · profit by supplier</div></div>
+      </div>
+      <div id="supplierTable" style="overflow-x:auto;"></div>
+    </div>
+  </div>
+
   <!-- Action Centre -->
   <div class="section-head"><div><div class="section-title">Action Centre</div><div class="section-sub">Items requiring immediate attention</div></div></div>
-  <div class="action-grid" style="margin-bottom:28px;">
+  <div style="margin-bottom:28px;">
     <div class="alert-card">
       <div class="alert-title">
         🔴 Low Stock / Sold Out
@@ -472,13 +490,6 @@
         <thead><tr><th>Product ID</th><th>Description</th><th>Category</th><th>Qty</th></tr></thead>
         <tbody><tr><td colspan="4" class="empty-state">Loading…</td></tr></tbody>
       </table>
-    </div>
-    <div class="alert-card">
-      <div class="alert-title">
-        🏆 Salesperson Leaderboard
-        <span class="alert-badge gold" id="periodLabel">Today</span>
-      </div>
-      <div id="leaderboard"><p class="empty-state">Loading…</p></div>
     </div>
   </div>
 
@@ -496,6 +507,7 @@
   let allSales = [];
   let allInventory = [];
   let allLipaPlans = [];
+  let allCustomers = [];
   let activePeriod = 'all';
   let charts = {};
 
@@ -541,7 +553,7 @@
 
     try {
       // Independent fetches — one failing doesn't block the other
-      const [salesResult, invResult, lipaResult] = await Promise.allSettled([
+      const [salesResult, invResult, lipaResult, custResult] = await Promise.allSettled([
         withTimeout(
           sbClient.from('sales').select('*').order('sale_date', { ascending: false }).limit(500),
           7000
@@ -552,6 +564,10 @@
         ),
         withTimeout(
           sbClient.from('lipa_polepole_plans').select('plan_id,customer_name,print_name,price,deposit_paid,status,reserved_product_id').in('status',['Active','Overdue']),
+          7000
+        ),
+        withTimeout(
+          sbClient.from('customers').select('customer_id,county,city').limit(1000),
           7000
         )
       ]);
@@ -581,6 +597,13 @@
         else allLipaPlans = data || [];
       } else {
         console.warn('Lipa plans query rejected:', lipaResult.reason?.message);
+      }
+
+      // Parse customers
+      if (custResult && custResult.status === 'fulfilled') {
+        const { data, error } = custResult.value;
+        if (error) console.warn('Customers query error:', error.message);
+        else allCustomers = data || [];
       }
 
       // We reached here = Supabase responded (tables may just be empty)
@@ -646,8 +669,10 @@
     // Period-filtered charts
     renderPlatformChart(sales.length ? sales : allSales);
     renderSalespersonChart(sales.length ? sales : allSales);
+    // Always use full data for region/supplier analytics
+    renderCustomerRegionChart();
+    renderSupplierTable();
     renderActionCentre(sales);
-    document.getElementById('periodLabel').textContent = periodLabel();
   }
 
   // ─────────────────────────────────────────
@@ -1016,21 +1041,152 @@
       options: { ...chartOpts('KES'), indexAxis:'y' }
     });
 
-    // Leaderboard
-    const lb = document.getElementById('leaderboard');
-    if (!sorted.length) { lb.innerHTML='<p class="empty-state">No sales in this period</p>'; return; }
-    const max = sorted[0][1];
-    const rankClasses = ['gold','silver','bronze'];
-    lb.innerHTML = sorted.slice(0,6).map((x,i)=>`
-      <div class="leader-row">
-        <div class="leader-rank ${rankClasses[i]||''}">${i+1}</div>
-        <div class="leader-info">
-          <div class="leader-name">${x[0]}</div>
-          <div class="leader-bar-wrap"><div class="leader-bar" style="width:${max>0?(x[1]/max*100).toFixed(1):0}%"></div></div>
-        </div>
-        <div class="leader-amt">${fmtKES(x[1])}</div>
-      </div>
-    `).join('');
+  }
+
+  // ─────────────────────────────────────────
+  // CUSTOMER ANALYSIS BY REGION
+  // ─────────────────────────────────────────
+  function renderCustomerRegionChart() {
+    // Build county → {customers, revenue} from allCustomers + allSales
+    const regionMap = {};
+
+    // Count customers per county
+    allCustomers.forEach(c => {
+      const county = (c.county || c.city || 'Unknown').trim();
+      if (!regionMap[county]) regionMap[county] = { customers: 0, revenue: 0 };
+      regionMap[county].customers++;
+    });
+
+    // Add revenue from sales (match customer_id → county)
+    const custCounty = {};
+    allCustomers.forEach(c => {
+      if (c.customer_id) custCounty[c.customer_id] = (c.county || c.city || 'Unknown').trim();
+    });
+    allSales.forEach(s => {
+      const county = custCounty[s.customer_id] || (s.county) || null;
+      if (!county) return;
+      if (!regionMap[county]) regionMap[county] = { customers: 0, revenue: 0 };
+      regionMap[county].revenue += (parseFloat(s.selling_price)||0) - (parseFloat(s.discount)||0);
+    });
+
+    // Sort by revenue descending, top 8
+    const sorted = Object.entries(regionMap)
+      .filter(([k]) => k !== 'Unknown')
+      .sort((a,b) => b[1].revenue - a[1].revenue)
+      .slice(0, 8);
+
+    if (!sorted.length) {
+      destroyChart('chartCustomerRegion');
+      return;
+    }
+
+    const labels = sorted.map(x => x[0]);
+    const revenues = sorted.map(x => x[1].revenue);
+    const customers = sorted.map(x => x[1].customers);
+
+    destroyChart('chartCustomerRegion');
+    const ctx = document.getElementById('chartCustomerRegion').getContext('2d');
+    charts.customerRegion = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Revenue (KES)',
+            data: revenues,
+            backgroundColor: 'rgba(196,154,44,0.70)',
+            borderColor: '#C49A2C',
+            borderWidth: 1,
+            borderRadius: 5,
+            yAxisID: 'y'
+          },
+          {
+            label: '# Customers',
+            data: customers,
+            type: 'line',
+            borderColor: '#facc15',
+            backgroundColor: 'rgba(250,204,21,0.15)',
+            borderWidth: 2,
+            pointRadius: 4,
+            tension: 0.3,
+            yAxisID: 'y2'
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#9e9e9e', font: { size: 11 }, boxWidth: 10 } },
+          tooltip: { callbacks: { label: ctx => ctx.dataset.yAxisID === 'y2' ? ` ${ctx.dataset.label}: ${ctx.raw}` : ` ${ctx.dataset.label}: KES ${Number(ctx.raw).toLocaleString()}` } }
+        },
+        scales: {
+          x: { ticks: { color: '#666', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' } },
+          y: { position: 'left', ticks: { color: '#666', font: { size: 10 }, callback: v => 'KES ' + Number(v).toLocaleString() }, grid: { color: 'rgba(255,255,255,.04)' } },
+          y2: { position: 'right', ticks: { color: '#9e9e9e', font: { size: 10 } }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // SUPPLIER PERFORMANCE TABLE
+  // ─────────────────────────────────────────
+  function renderSupplierTable() {
+    // Build product_id → {supplier, cost_price} from allInventory
+    const prodMap = {};
+    allInventory.forEach(i => {
+      prodMap[i.product_id] = { supplier: i.supplier || 'Unknown', cost_price: parseFloat(i.cost_price)||0 };
+    });
+
+    // Aggregate sales by supplier
+    const supplierMap = {};
+    allSales.forEach(s => {
+      const info = prodMap[s.product_id];
+      if (!info) return;
+      const sup = info.supplier;
+      if (!supplierMap[sup]) supplierMap[sup] = { units: 0, revenue: 0, profit: 0 };
+      const rev = (parseFloat(s.selling_price)||0) - (parseFloat(s.discount)||0);
+      const cost = info.cost_price;
+      supplierMap[sup].units++;
+      supplierMap[sup].revenue += rev;
+      supplierMap[sup].profit += (rev - cost);
+    });
+
+    const rows = Object.entries(supplierMap)
+      .sort((a,b) => b[1].profit - a[1].profit);
+
+    const el = document.getElementById('supplierTable');
+    if (!rows.length) { el.innerHTML = '<p class="empty-state" style="padding:16px">No sales data matched to suppliers yet.</p>'; return; }
+
+    const margin = (p, r) => r > 0 ? Math.round(p / r * 100) : 0;
+    el.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:var(--sans);">
+        <thead>
+          <tr style="background:#1C1204;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;font-size:10px;">
+            <th style="padding:8px 10px;text-align:center;">#</th>
+            <th style="padding:8px 10px;text-align:left;">Supplier</th>
+            <th style="padding:8px 10px;text-align:right;">Units</th>
+            <th style="padding:8px 10px;text-align:right;">Revenue</th>
+            <th style="padding:8px 10px;text-align:right;">Profit</th>
+            <th style="padding:8px 10px;text-align:right;">Margin</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(([sup, d], i) => `
+            <tr style="border-top:1px solid rgba(255,255,255,.06);${i===0?'background:rgba(196,154,44,.07)':''}">
+              <td style="padding:9px 10px;text-align:center;color:${i===0?'#C49A2C':i===1?'#9e9e9e':i===2?'#b87333':'var(--muted)'};font-weight:700;">${i+1}</td>
+              <td style="padding:9px 10px;color:var(--text);font-weight:${i===0?'600':'400'}">${sup}</td>
+              <td style="padding:9px 10px;text-align:right;color:var(--muted);">${d.units}</td>
+              <td style="padding:9px 10px;text-align:right;color:var(--text);">KES ${Math.round(d.revenue).toLocaleString()}</td>
+              <td style="padding:9px 10px;text-align:right;color:#4ade80;">KES ${Math.round(d.profit).toLocaleString()}</td>
+              <td style="padding:9px 10px;text-align:right;">
+                <span style="background:rgba(74,222,128,.12);color:#4ade80;padding:2px 7px;border-radius:12px;font-size:10px;">${margin(d.profit,d.revenue)}%</span>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
   }
 
   // ─────────────────────────────────────────
