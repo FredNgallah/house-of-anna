@@ -993,13 +993,37 @@
 
               <div class="form-group">
                 <label for="customerPhone">Customer Phone</label>
-                <input 
-                  type="tel" 
-                  id="customerPhone" 
-                  name="customerPhone" 
-                  placeholder="e.g. 0712 345 678" 
+                <input
+                  type="tel"
+                  id="customerPhone"
+                  name="customerPhone"
+                  placeholder="e.g. 0712 345 678"
                   autocomplete="off"
                 />
+              </div>
+            </div>
+
+            <!-- County -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="customerCounty">County / Region</label>
+                <select id="customerCounty" name="customerCounty">
+                  <option value="">— Select county —</option>
+                  <option value="Nairobi">Nairobi</option>
+                  <option value="Kiambu">Kiambu</option>
+                  <option value="Kajiado">Kajiado</option>
+                  <option value="Nakuru">Nakuru</option>
+                  <option value="Mombasa">Mombasa</option>
+                  <option value="Kisumu">Kisumu</option>
+                  <option value="Machakos">Machakos</option>
+                  <option value="Nyeri">Nyeri</option>
+                  <option value="Murang'a">Murang'a</option>
+                  <option value="Kirinyaga">Kirinyaga</option>
+                  <option value="Nyandarua">Nyandarua</option>
+                  <option value="Laikipia">Laikipia</option>
+                  <option value="Diaspora">Diaspora</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
             </div>
 
@@ -1626,6 +1650,7 @@
 
       const customerName = document.getElementById('customerName').value.trim();
       const customerPhone = document.getElementById('customerPhone').value.trim();
+      const customerCounty = document.getElementById('customerCounty').value.trim();
       const platform = document.getElementById('platform').value;
       const salesperson = document.getElementById('salesperson').value;
       const paymentMethod = document.getElementById('paymentMethod').value;
@@ -1708,6 +1733,7 @@
                   customer_id: newCustId,
                   name: customerName,
                   phone: customerPhone || null,
+                  county: customerCounty || null,
                   created_at: todayIso
                 }])
                 .select('customer_id');
@@ -1767,6 +1793,7 @@
           selling_price: isLipaSale ? lipaDepositAmt : sellingPrice,
           discount: isLipaSale ? 0 : discount,    // discount is tracked on the plan, not the deposit row
           cost_price: costPrice,
+          supplier: selectedItem.supplier || null,
           salesperson: salesperson,
           delivery_method: deliveryMethod,
           notes: isLipaSale

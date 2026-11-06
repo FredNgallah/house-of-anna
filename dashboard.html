@@ -1046,39 +1046,47 @@
   // ─────────────────────────────────────────
   // CUSTOMER ANALYSIS BY REGION
   // ─────────────────────────────────────────
+  // Historical seed — pre-HABOS tally (updated as live data populates)
+  const REGION_SEED = [
+    { county: 'Nairobi',  customers: 28, revenue: 72340 },
+    { county: 'Kiambu',   customers: 7,  revenue: 25050 },
+    { county: 'Kajiado',  customers: 9,  revenue: 16800 },
+    { county: 'Nakuru',   customers: 4,  revenue: 10050 },
+    { county: 'USA',      customers: 1,  revenue: 9750  },
+  ];
+
   function renderCustomerRegionChart() {
-    // Build county → {customers, revenue} from allCustomers + allSales
+    // Start with historical seed
     const regionMap = {};
+    REGION_SEED.forEach(s => { regionMap[s.county] = { customers: s.customers, revenue: s.revenue }; });
 
-    // Count customers per county
+    // Overlay live data: customers with county recorded in Supabase
     allCustomers.forEach(c => {
-      const county = (c.county || c.city || 'Unknown').trim();
+      const county = (c.county || c.city || '').trim();
+      if (!county || county === 'Unknown') return;
       if (!regionMap[county]) regionMap[county] = { customers: 0, revenue: 0 };
-      regionMap[county].customers++;
+      // Only increment if this customer isn't already counted in seed
+      // (seed covers pre-HABOS; new customers have county from POS going forward)
     });
 
-    // Add revenue from sales (match customer_id → county)
+    // Add revenue from new sales that have county via customer link
     const custCounty = {};
-    allCustomers.forEach(c => {
-      if (c.customer_id) custCounty[c.customer_id] = (c.county || c.city || 'Unknown').trim();
-    });
+    allCustomers.forEach(c => { if (c.customer_id && (c.county || c.city)) custCounty[c.customer_id] = (c.county || c.city).trim(); });
     allSales.forEach(s => {
-      const county = custCounty[s.customer_id] || (s.county) || null;
-      if (!county) return;
-      if (!regionMap[county]) regionMap[county] = { customers: 0, revenue: 0 };
-      regionMap[county].revenue += (parseFloat(s.selling_price)||0) - (parseFloat(s.discount)||0);
+      const county = custCounty[s.customer_id] || null;
+      if (!county || county === 'Unknown') return;
+      if (regionMap[county]) {
+        // Add to existing seed bucket
+        regionMap[county].revenue += (parseFloat(s.selling_price)||0) - (parseFloat(s.discount)||0);
+      } else {
+        regionMap[county] = { customers: 1, revenue: (parseFloat(s.selling_price)||0) - (parseFloat(s.discount)||0) };
+      }
     });
 
     // Sort by revenue descending, top 8
     const sorted = Object.entries(regionMap)
-      .filter(([k]) => k !== 'Unknown')
       .sort((a,b) => b[1].revenue - a[1].revenue)
       .slice(0, 8);
-
-    if (!sorted.length) {
-      destroyChart('chartCustomerRegion');
-      return;
-    }
 
     const labels = sorted.map(x => x[0]);
     const revenues = sorted.map(x => x[1].revenue);
@@ -1131,25 +1139,55 @@
   // ─────────────────────────────────────────
   // SUPPLIER PERFORMANCE TABLE
   // ─────────────────────────────────────────
-  function renderSupplierTable() {
-    // Build product_id → {supplier, cost_price} from allInventory
-    const prodMap = {};
-    allInventory.forEach(i => {
-      prodMap[i.product_id] = { supplier: i.supplier || 'Unknown', cost_price: parseFloat(i.cost_price)||0 };
-    });
+  // Historical seed — pre-HABOS tally. Live data (sales with supplier field) merges on top.
+  const SUPPLIER_SEED = [
+    { supplier: 'Vivian',           units: 205, revenue: 173700, profit: 73800 },
+    { supplier: 'Mamake Scola',     units: 15,  revenue: 14200,  profit: 4450  },
+    { supplier: 'Chelsea',          units: 9,   revenue: 7800,   profit: 1850  },
+    { supplier: 'Mamake Esther',    units: 5,   revenue: 4000,   profit: 1750  },
+    { supplier: 'Thrift (Gikomba)', units: 4,   revenue: 2650,   profit: 1200  },
+    { supplier: 'Irene',            units: 4,   revenue: 3400,   profit: 800   },
+  ];
 
-    // Aggregate sales by supplier
+  function renderSupplierTable() {
+    // Start from seed
     const supplierMap = {};
+    SUPPLIER_SEED.forEach(s => { supplierMap[s.supplier] = { units: s.units, revenue: s.revenue, profit: s.profit, seed: true }; });
+
+    // Overlay live data from sales that carry a supplier field (new sales via updated POS)
     allSales.forEach(s => {
-      const info = prodMap[s.product_id];
-      if (!info) return;
-      const sup = info.supplier;
-      if (!supplierMap[sup]) supplierMap[sup] = { units: 0, revenue: 0, profit: 0 };
+      if (!s.supplier || s.supplier === 'Unknown') return; // only process sales with real supplier data
+      const sup = s.supplier;
       const rev = (parseFloat(s.selling_price)||0) - (parseFloat(s.discount)||0);
-      const cost = info.cost_price;
+      const cost = parseFloat(s.cost_price)||0;
+      if (!supplierMap[sup]) {
+        supplierMap[sup] = { units: 0, revenue: 0, profit: 0, seed: false };
+      } else if (supplierMap[sup].seed) {
+        // First live entry for this supplier — reset seed totals so we don't double-count
+        supplierMap[sup] = { units: 0, revenue: 0, profit: 0, seed: false };
+      }
       supplierMap[sup].units++;
       supplierMap[sup].revenue += rev;
       supplierMap[sup].profit += (rev - cost);
+    });
+
+    // Also try joining through inventory for any sales that have product_id match
+    const prodMap = {};
+    allInventory.forEach(i => { if (i.supplier && i.supplier !== 'Unknown') prodMap[i.product_id] = { supplier: i.supplier, cost_price: parseFloat(i.cost_price)||0 }; });
+    allSales.forEach(s => {
+      if (s.supplier) return; // already handled above
+      const info = prodMap[s.product_id];
+      if (!info) return;
+      const sup = info.supplier;
+      const rev = (parseFloat(s.selling_price)||0) - (parseFloat(s.discount)||0);
+      if (!supplierMap[sup]) {
+        supplierMap[sup] = { units: 0, revenue: 0, profit: 0, seed: false };
+      } else if (supplierMap[sup].seed) {
+        supplierMap[sup] = { units: 0, revenue: 0, profit: 0, seed: false };
+      }
+      supplierMap[sup].units++;
+      supplierMap[sup].revenue += rev;
+      supplierMap[sup].profit += (rev - info.cost_price);
     });
 
     const rows = Object.entries(supplierMap)
