@@ -444,22 +444,6 @@
     <span class="filter-count" id="filterCount"></span>
   </div>
 
-  <!-- CHARTS -->
-  <div class="charts-row">
-    <div class="chart-card">
-      <div class="chart-title">Revenue by Month</div>
-      <div class="chart-wrap"><canvas id="chartMonthly"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Sales by Channel</div>
-      <div class="chart-wrap"><canvas id="chartPlatform"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Salesperson Performance</div>
-      <div class="chart-wrap"><canvas id="chartSalesperson"></canvas></div>
-    </div>
-  </div>
-
   <!-- SALES TABLE -->
   <div class="table-section">
     <div class="table-header">
@@ -528,7 +512,6 @@ let sortCol        = 'sale_date';
 let sortDir        = 'desc';
 let currentPage    = 1;
 const PAGE_SIZE    = 25;
-let chartMonthly, chartPlatform, chartSalesperson;
 
 // ── Helpers ────────────────────────────────────────────────
 function kes(n) {
@@ -616,7 +599,6 @@ function setPeriod(btn) {
   currentPeriod = btn.dataset.period;
   currentPage = 1;
   applyFilters();
-  renderCharts(filteredSales);
 }
 
 // ── Populate filter dropdowns ──────────────────────────────
@@ -879,122 +861,6 @@ function updateSortHeaders() {
   });
 }
 
-// ── CHARTS ─────────────────────────────────────────────────
-function renderCharts(sales) {
-  renderMonthlyChart(sales);
-  renderPlatformChart(sales);
-  renderSalespersonChart(sales);
-}
-
-function renderMonthlyChart(sales) {
-  const map = {};
-  sales.forEach(r => {
-    if (!r.sale_date) return;
-    try {
-      const d = new Date(r.sale_date);
-      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-      if (!map[key]) map[key] = { rev: 0, prof: 0 };
-      const sp   = parseNum(r.selling_price);
-      const disc = parseNum(r.discount);
-      const cost = parseNum(r.cost_price);
-      const net  = sp - disc;
-      map[key].rev  += net;
-      map[key].prof += net - cost;
-    } catch(e){}
-  });
-
-  const keys   = Object.keys(map).sort();
-  const labels = keys.map(k => { const [y,m] = k.split('-'); return new Date(+y,+m-1,1).toLocaleString('en-KE',{month:'short',year:'2-digit'}); });
-  const revs   = keys.map(k => Math.round(map[k].rev));
-  const profs  = keys.map(k => Math.round(map[k].prof));
-
-  if (chartMonthly) chartMonthly.destroy();
-  chartMonthly = new Chart(document.getElementById('chartMonthly').getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Revenue', data: revs, backgroundColor: 'rgba(196,154,44,0.7)', borderColor: '#C49A2C', borderWidth: 1, borderRadius: 3, borderSkipped: false },
-        { label: 'Profit',  data: profs, backgroundColor: 'rgba(16,185,129,0.55)', borderColor: '#10b981', borderWidth: 1, borderRadius: 3, borderSkipped: false }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { color: '#9e9e9e', font: { size: 10 }, padding: 10 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: KES ${ctx.parsed.y.toLocaleString()}` } }
-      },
-      scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#9e9e9e', font: { size: 10 } } },
-        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9e9e9e', font: { size: 10 }, callback: v => 'K' + Math.round(v/1000) } }
-      }
-    }
-  });
-}
-
-function renderPlatformChart(sales) {
-  const map = {};
-  sales.forEach(r => {
-    const p = r.platform || 'Unknown';
-    if (!map[p]) map[p] = 0;
-    map[p] += parseNum(r.selling_price) - parseNum(r.discount);
-  });
-  const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,7);
-  const colors = ['rgba(196,154,44,0.8)','rgba(6,182,212,0.75)','rgba(139,92,246,0.75)','rgba(16,185,129,0.75)','rgba(245,158,11,0.75)','rgba(239,68,68,0.75)','rgba(59,130,246,0.75)'];
-
-  if (chartPlatform) chartPlatform.destroy();
-  chartPlatform = new Chart(document.getElementById('chartPlatform').getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels: sorted.map(e=>e[0]),
-      datasets: [{ data: sorted.map(e=>Math.round(e[1])), backgroundColor: colors, borderRadius: 4, borderSkipped: false }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ` KES ${ctx.parsed.x.toLocaleString()}` } }
-      },
-      scales: {
-        x: { grid: { color:'rgba(255,255,255,0.03)' }, ticks: { color:'#9e9e9e', font:{size:10}, callback: v => 'K'+Math.round(v/1000) } },
-        y: { grid: { display: false }, ticks: { color:'#c9c9c9', font:{size:11} } }
-      }
-    }
-  });
-}
-
-function renderSalespersonChart(sales) {
-  const map = {};
-  sales.forEach(r => {
-    const s = r.salesperson || 'Unknown';
-    if (!map[s]) map[s] = { rev: 0, txns: 0 };
-    map[s].rev  += parseNum(r.selling_price) - parseNum(r.discount);
-    map[s].txns += 1;
-  });
-  const sorted = Object.entries(map).sort((a,b)=>b[1].rev-a[1].rev);
-  const colors = ['rgba(196,154,44,0.8)','rgba(139,92,246,0.75)','rgba(6,182,212,0.75)','rgba(245,158,11,0.75)'];
-
-  if (chartSalesperson) chartSalesperson.destroy();
-  chartSalesperson = new Chart(document.getElementById('chartSalesperson').getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels: sorted.map(e=>e[0]),
-      datasets: [{ data: sorted.map(e=>Math.round(e[1].rev)), backgroundColor: colors.slice(0, sorted.length), borderRadius: 4, borderSkipped: false }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ` KES ${ctx.parsed.x.toLocaleString()}  (${sorted[ctx.dataIndex][1].txns} txns)` } }
-      },
-      scales: {
-        x: { grid: { color:'rgba(255,255,255,0.03)' }, ticks: { color:'#9e9e9e', font:{size:10}, callback: v => 'K'+Math.round(v/1000) } },
-        y: { grid: { display: false }, ticks: { color:'#c9c9c9', font:{size:11} } }
-      }
-    }
-  });
-}
-
 // ── CSV EXPORT ─────────────────────────────────────────────
 function exportCSV() {
   const cols = ['invoice_number','sale_date','customer_name','print_name','platform','payment_method','selling_price','discount','net_sale','cost_price','profit','margin_pct','salesperson','delivery_method','notes'];
@@ -1062,7 +928,6 @@ async function loadAll() {
     populateFilters(allSales);
     applyFilters();
     renderBalances();
-    renderCharts(allSales);
 
   } catch(e) {
     console.error('loadAll error:', e);

@@ -1021,10 +1021,12 @@
   // SALESPERSON BAR
   // ─────────────────────────────────────────
   function renderSalespersonChart(sales) {
-    const bySP = {};
+    // Only track the two current salespeople; ignore legacy / unknown names
+    const TEAM = ['Ann K.', 'Fred N.'];
+    const bySP = { 'Ann K.': 0, 'Fred N.': 0 };
     sales.forEach(s => {
-      const sp = s.salesperson || 'Unknown';
-      bySP[sp] = (bySP[sp]||0) + revenue(s);
+      const sp = s.salesperson || '';
+      if (TEAM.includes(sp)) bySP[sp] += revenue(s);
     });
     const sorted = Object.entries(bySP).sort((a,b)=>b[1]-a[1]);
     const labels = sorted.map(x=>x[0]);
