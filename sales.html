@@ -417,19 +417,19 @@
   <!-- SALES BALANCES -->
   <div class="balances-block">
     <div class="balance-item">
-      <div class="balance-label">Weekly Sales</div>
+      <div class="balance-label">Weekly Balance (KES)</div>
       <div class="balance-value" id="bWeekly">—</div>
-      <div class="balance-sub" id="bWeeklySub">This week</div>
+      <div class="balance-sub" id="bWeeklySub">Target: KES 5,950/wk</div>
     </div>
     <div class="balance-item">
-      <div class="balance-label">Monthly Sales</div>
+      <div class="balance-label">Monthly Balance (KES)</div>
       <div class="balance-value" id="bMonthly">—</div>
-      <div class="balance-sub" id="bMonthlySub">This month</div>
+      <div class="balance-sub" id="bMonthlySub">Target: KES 25,500/mo</div>
     </div>
     <div class="balance-item">
-      <div class="balance-label">YTD Sales</div>
+      <div class="balance-label">YTD Balance (KES)</div>
       <div class="balance-value" id="bYTD">—</div>
-      <div class="balance-sub" id="bYTDSub">Year to date</div>
+      <div class="balance-sub" id="bYTDSub">Target: KES 309,400/yr</div>
     </div>
   </div>
 
@@ -697,11 +697,12 @@ function renderKPIs(sales) {
 }
 
 // ── renderBalances ─────────────────────────────────────────
+const TARGETS = { weekly: 5950, monthly: 25500, annual: 309400 };
+
 function renderBalances() {
   const now = new Date();
   const y   = now.getFullYear();
   const m   = String(now.getMonth() + 1).padStart(2, '0');
-  const todayStr = now.toISOString().slice(0, 10);
 
   // Week start = most recent Monday
   const dow = now.getDay();
@@ -725,16 +726,22 @@ function renderBalances() {
     if (d.slice(0, 4) === yearStr)      { ytd     += rev; yCount++; }
   });
 
-  function setBalance(valId, subId, amount, count, label) {
+  // Balance = actual − target (negative = deficit, positive = surplus)
+  const wBal = weekly  - TARGETS.weekly;
+  const mBal = monthly - TARGETS.monthly;
+  const yBal = ytd     - TARGETS.annual;
+
+  function setBalance(valId, subId, balance, actual, count) {
     const el = document.getElementById(valId);
-    el.textContent = kes(amount);
-    el.className   = 'balance-value' + (amount < 0 ? ' neg' : '');
-    document.getElementById(subId).textContent = `${count} transaction${count !== 1 ? 's' : ''} ${label}`;
+    el.textContent = kes(balance);
+    el.className   = 'balance-value' + (balance < 0 ? ' neg' : '');
+    document.getElementById(subId).textContent =
+      `${count} sale${count !== 1 ? 's' : ''} · actual ${kes(actual)}`;
   }
 
-  setBalance('bWeekly',  'bWeeklySub',  weekly,  wCount, 'this week');
-  setBalance('bMonthly', 'bMonthlySub', monthly, mCount, 'this month');
-  setBalance('bYTD',     'bYTDSub',     ytd,     yCount, `in ${y}`);
+  setBalance('bWeekly',  'bWeeklySub',  wBal, weekly,  wCount);
+  setBalance('bMonthly', 'bMonthlySub', mBal, monthly, mCount);
+  setBalance('bYTD',     'bYTDSub',     yBal, ytd,     yCount);
 }
 
 // ── renderTable ────────────────────────────────────────────
