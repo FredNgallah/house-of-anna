@@ -483,6 +483,23 @@
       background: rgba(239, 68, 68, 0.1);
     }
 
+    /* ── Cart Section ── */
+    .cart-section { display: none; background: #0F0A01; border: 1px solid var(--card-border); border-radius: 10px; padding: 14px; margin-bottom: 16px; }
+    .cart-section.has-items { display: block; }
+    .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .cart-label { font-size: 0.8rem; font-weight: 600; color: var(--pink-accent); text-transform: uppercase; letter-spacing: 1px; }
+    .cart-row { display: grid; grid-template-columns: 1fr 90px 76px auto; gap: 8px; align-items: start; padding: 8px 10px; background: var(--input-bg); border-radius: 7px; margin-bottom: 6px; font-size: 0.78rem; }
+    .cart-item-name { font-weight: 600; color: #fff; line-height: 1.3; }
+    .cart-item-id  { font-size: 0.68rem; color: var(--pink-accent); font-family: monospace; margin-top: 2px; }
+    .cart-input-label { font-size: 0.65rem; color: #888; display: block; margin-bottom: 3px; }
+    .cart-input { width: 100%; background: var(--bg-color); border: 1px solid var(--input-border); color: #fff; padding: 5px 7px; border-radius: 5px; font-size: 0.75rem; font-family: var(--font-sans); }
+    .cart-input:focus { outline: none; border-color: var(--pink-accent); }
+    .cart-net { font-weight: 700; color: var(--pink-accent); white-space: nowrap; text-align: right; }
+    .cart-remove { font-size: 0.68rem; color: #ef4444; background: none; border: none; cursor: pointer; display: block; text-align: right; margin-top: 4px; padding: 0; font-family: var(--font-sans); }
+    .cart-total-row { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px dashed var(--card-border); margin-top: 4px; font-size: 0.84rem; color: var(--text-muted); }
+    .cart-total-amount { font-weight: 700; font-size: 0.95rem; color: var(--pink-accent); }
+    .lp-multi-warning { display: none; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); border-radius: 7px; padding: 8px 12px; font-size: 0.75rem; color: #f87171; margin-bottom: 10px; }
+
     /* Order Summary & Pricing Preview */
     .order-summary-box {
       background: #121212;
@@ -956,10 +973,9 @@
               <div class="product-search-wrapper">
                 <input 
                   type="text" 
-                  id="productSearchInput" 
-                  placeholder="Type to search print name or Product ID..." 
-                  autocomplete="off" 
-                  required
+                  id="productSearchInput"
+                  placeholder="Type to search and add items to cart..."
+                  autocomplete="off"
                 />
                 <div class="product-suggestions" id="productSuggestions">
                   <!-- Live search results rendered here -->
@@ -967,14 +983,17 @@
               </div>
             </div>
 
-            <!-- Selected Product Info Banner -->
-            <div class="selected-product-box" id="selectedProductBox">
-              <div class="selected-product-info">
-                <div class="selected-product-id" id="dispProductId">HOA-INV-001</div>
-                <div class="selected-product-name" id="dispPrintName">Floral Dera</div>
-                <div class="selected-product-stock" id="dispStockCount">Stock: 1 unit available</div>
+            <!-- Cart Section — populated when items are added -->
+            <div class="cart-section" id="cartSection">
+              <div class="cart-header">
+                <span class="cart-label">🛒 Cart · <span id="cartCount">0</span> item<span id="cartCountPlural">s</span></span>
+                <button type="button" onclick="clearCart()" style="font-size:0.72rem;color:#888;background:none;border:none;cursor:pointer;padding:0;font-family:var(--font-sans);">✕ Clear all</button>
               </div>
-              <button type="button" class="btn-clear-product" id="btnClearProduct">✕ Change</button>
+              <div id="cartItemsList"></div>
+              <div class="cart-total-row">
+                <span>Cart Total</span>
+                <span class="cart-total-amount" id="cartTotalDisplay">KES 0</span>
+              </div>
             </div>
 
             <!-- Customer Details: Name & Phone -->
@@ -1076,6 +1095,7 @@
 
             <!-- Lipa Polepole Instalment Plan Panel -->
             <div class="lipa-panel" id="lipaPanel">
+              <div class="lp-multi-warning" id="lpMultiWarning">⚠️ Lipa Polepole is only available for single-item purchases. Remove extra items from cart to enable.</div>
               <div class="lipa-panel-header">💜 Lipa Polepole — Instalment Plan Details</div>
               <div class="form-row">
                 <div class="form-group">
@@ -1092,35 +1112,9 @@
               </div>
             </div>
 
-            <!-- Selling Price, Cost Price & Discount -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="sellingPrice">Selling Price (KES) <span class="req">*</span></label>
-                <input 
-                  type="number" 
-                  id="sellingPrice" 
-                  name="sellingPrice" 
-                  placeholder="Auto-filled" 
-                  min="0"
-                  step="50"
-                  required 
-                />
-              </div>
-
-              <div class="form-group">
-                <label for="discount">Discount (KES)</label>
-                <input 
-                  type="number" 
-                  id="discount" 
-                  name="discount" 
-                  placeholder="0" 
-                  min="0"
-                  step="50"
-                  value="0"
-                />
-              </div>
-            </div>
-
+            <!-- Pricing fields hidden — now managed per-item in cart -->
+            <input type="hidden" id="sellingPrice" name="sellingPrice" value="0" />
+            <input type="hidden" id="discount" name="discount" value="0" />
             <input type="hidden" id="costPrice" name="costPrice" value="0" />
             <input type="hidden" id="selectedProductId" name="selectedProductId" value="" />
             <input type="hidden" id="selectedPrintName" name="selectedPrintName" value="" />
@@ -1140,7 +1134,7 @@
             <!-- Pricing Breakdown Box -->
             <div class="order-summary-box">
               <div class="summary-row">
-                <span>Garment Price:</span>
+                <span>Items Subtotal:</span>
                 <span id="sumSellingPrice">KES 0</span>
               </div>
               <div class="summary-row">
@@ -1268,15 +1262,8 @@
         </div>
       </div>
 
-      <div style="border-top: 1px dashed #333; padding-top: 12px; margin-top: 12px;">
-        <div class="receipt-item-row" style="font-weight: 600; color: #fff;">
-          <span id="recPrint">Garment Item</span>
-          <span id="recOriginalPrice">KES 0</span>
-        </div>
-        <div class="receipt-item-row" id="recDiscountRow" style="color: #ef4444;">
-          <span>Discount</span>
-          <span id="recDiscount">- KES 0</span>
-        </div>
+      <div id="recItemsList" style="border-top: 1px dashed #333; padding-top: 12px; margin-top: 12px;">
+        <!-- Items rendered dynamically by showReceipt() -->
       </div>
 
       <div class="receipt-total-row">
@@ -1317,7 +1304,7 @@
     let supabaseClient = null;
     let inventoryItems = [];
     let salesRecords = [];
-    let selectedItem = null;
+    let cart = []; // Array of { item, sellingPrice, discount }
     let activeFilter = 'today'; // 'today' or 'all'
 
     // Fallback seed inventory for testing
@@ -1373,24 +1360,32 @@
 
     // Show / hide the Lipa panel and update button text when payment method changes
     function handlePaymentMethodChange(value) {
-      const panel = document.getElementById('lipaPanel');
-      const btnText = document.getElementById('btnSubmitText');
+      const panel        = document.getElementById('lipaPanel');
+      const btnText      = document.getElementById('btnSubmitText');
       const sumDepositRow = document.getElementById('sumDepositRow');
       const sumTotalLabel = document.getElementById('sumTotalLabel');
+      const lpWarning    = document.getElementById('lpMultiWarning');
 
       if (value === 'Lipa Polepole') {
+        if (cart.length > 1) {
+          showToast('Lipa Polepole is only available for single-item purchases', 'error');
+          document.getElementById('paymentMethod').value = 'M-Pesa';
+          return;
+        }
         panel.classList.add('visible');
+        if (lpWarning) lpWarning.style.display = 'none';
         btnText.textContent = '💜 Reserve & Create Plan';
         sumDepositRow.style.display = 'flex';
         sumTotalLabel.textContent = 'Full Plan Price:';
 
-        // Auto-fill deposit (40% of net price) and due date (today + 30 days)
-        const selling = parseFloat(document.getElementById('sellingPrice').value) || 0;
-        const discount = parseFloat(document.getElementById('discount').value) || 0;
-        const net = Math.max(0, selling - discount);
-        const depositField = document.getElementById('lipaDeposit');
-        if (!depositField.value || depositField.value === '0') {
-          depositField.value = net > 0 ? Math.round(net * 0.40) : '';
+        // Auto-fill deposit (40%) and due date (today + 30 days) from cart item
+        if (cart.length === 1) {
+          const entry = cart[0];
+          const net = Math.max(0, entry.sellingPrice - entry.discount);
+          const depositField = document.getElementById('lipaDeposit');
+          if (!depositField.value || depositField.value === '0') {
+            depositField.value = net > 0 ? Math.round(net * 0.40) : '';
+          }
         }
         const dueDateField = document.getElementById('lipaDueDate');
         if (!dueDateField.value) {
@@ -1568,69 +1563,135 @@
           suggestionsBox.style.display = 'none';
         }
       });
-
-      // Clear product button
-      document.getElementById('btnClearProduct').addEventListener('click', clearSelectedProduct);
     }
 
+    // ── Cart functions ──────────────────────────────────────────
     window.selectProduct = function(productId) {
       const item = inventoryItems.find(i => i.product_id === productId);
       if (!item) return;
 
-      selectedItem = item;
-      document.getElementById('selectedProductId').value = item.product_id;
-      document.getElementById('selectedPrintName').value = item.print_description;
-      document.getElementById('sellingPrice').value = item.selling_price;
-      document.getElementById('costPrice').value = item.cost_price;
+      if (cart.some(e => e.item.product_id === productId)) {
+        showToast('This item is already in the cart', 'error');
+        document.getElementById('productSearchInput').value = '';
+        document.getElementById('productSuggestions').style.display = 'none';
+        return;
+      }
 
-      // Update Preview Card
-      document.getElementById('dispProductId').textContent = item.product_id;
-      document.getElementById('dispPrintName').textContent = item.print_description;
-      document.getElementById('dispStockCount').textContent = `Stock: ${item.total_qty_stocked || 1} unit(s) available`;
-      document.getElementById('selectedProductBox').style.display = 'flex';
-
-      // Hide search input & suggestions
+      cart.push({ item, sellingPrice: Number(item.selling_price) || 0, discount: 0 });
       document.getElementById('productSearchInput').value = '';
       document.getElementById('productSuggestions').style.display = 'none';
+      renderCart();
+      updatePricingSummary();
+      showToast(`Added: ${item.print_description.substring(0, 50)}`, 'success');
+    };
 
+    window.removeFromCart = function(idx) {
+      cart.splice(idx, 1);
+      renderCart();
       updatePricingSummary();
     };
 
-    function clearSelectedProduct() {
-      selectedItem = null;
-      document.getElementById('selectedProductId').value = '';
-      document.getElementById('selectedPrintName').value = '';
-      document.getElementById('sellingPrice').value = '';
-      document.getElementById('costPrice').value = '0';
-      document.getElementById('selectedProductBox').style.display = 'none';
-      document.getElementById('productSearchInput').focus();
+    window.updateCartItem = function(idx, field, value) {
+      if (!cart[idx]) return;
+      const val = parseFloat(value) || 0;
+      if (field === 'price')    cart[idx].sellingPrice = val;
+      if (field === 'discount') cart[idx].discount = val;
+      // Don't re-render (would reset the focused input); just update summary
+      updateCartTotals();
       updatePricingSummary();
+    };
+
+    window.clearCart = function() {
+      cart = [];
+      renderCart();
+      updatePricingSummary();
+    };
+
+    function updateCartTotals() {
+      let total = 0;
+      cart.forEach(e => { total += Math.max(0, e.sellingPrice - e.discount); });
+      const el = document.getElementById('cartTotalDisplay');
+      if (el) el.textContent = formatKES(total);
+    }
+
+    function renderCart() {
+      const section  = document.getElementById('cartSection');
+      const list     = document.getElementById('cartItemsList');
+      const countEl  = document.getElementById('cartCount');
+      const pluralEl = document.getElementById('cartCountPlural');
+      const totalEl  = document.getElementById('cartTotalDisplay');
+
+      if (cart.length === 0) {
+        section.classList.remove('has-items');
+        list.innerHTML = '';
+        return;
+      }
+      section.classList.add('has-items');
+      countEl.textContent  = cart.length;
+      if (pluralEl) pluralEl.textContent = cart.length === 1 ? '' : 's';
+
+      let cartTotal = 0;
+      list.innerHTML = cart.map((entry, idx) => {
+        const net = Math.max(0, entry.sellingPrice - entry.discount);
+        cartTotal += net;
+        return `
+          <div class="cart-row">
+            <div>
+              <div class="cart-item-name">${escapeHtml(entry.item.print_description)}</div>
+              <div class="cart-item-id">${escapeHtml(entry.item.product_id)}</div>
+            </div>
+            <div>
+              <label class="cart-input-label">Price (KES)</label>
+              <input type="number" class="cart-input" value="${entry.sellingPrice}" min="0" step="50"
+                onchange="updateCartItem(${idx},'price',this.value)" />
+            </div>
+            <div>
+              <label class="cart-input-label">Discount</label>
+              <input type="number" class="cart-input" value="${entry.discount}" min="0" step="50"
+                onchange="updateCartItem(${idx},'discount',this.value)" />
+            </div>
+            <div style="text-align:right;">
+              <div class="cart-net">${formatKES(net)}</div>
+              <button type="button" class="cart-remove" onclick="removeFromCart(${idx})">✕ Remove</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      totalEl.textContent = formatKES(cartTotal);
+
+      // LP multi-item warning
+      const lpWarning = document.getElementById('lpMultiWarning');
+      if (lpWarning) lpWarning.style.display = cart.length > 1 ? 'block' : 'none';
     }
 
     /**
-     * UPDATE LIVE PRICING SUMMARY
+     * UPDATE LIVE PRICING SUMMARY (sums across all cart items)
      */
     function updatePricingSummary() {
-      const selling = parseFloat(document.getElementById('sellingPrice').value) || 0;
-      const discount = parseFloat(document.getElementById('discount').value) || 0;
-      const cost = parseFloat(document.getElementById('costPrice').value) || 0;
-      // Also re-auto-fill deposit when selling/discount change in LP mode
+      let totalSelling = 0, totalDiscount = 0, totalCost = 0;
+      cart.forEach(e => {
+        totalSelling  += e.sellingPrice;
+        totalDiscount += e.discount;
+        totalCost     += Number(e.item.cost_price) || 0;
+      });
+      const finalAmount = Math.max(0, totalSelling - totalDiscount);
+      const profit = finalAmount - totalCost;
+
+      // Auto-fill LP deposit from first cart item
       const isLP = document.getElementById('paymentMethod').value === 'Lipa Polepole';
-      if (isLP) {
-        const net = Math.max(0, selling - discount);
+      if (isLP && cart.length === 1) {
+        const net = Math.max(0, cart[0].sellingPrice - cart[0].discount);
         const depositField = document.getElementById('lipaDeposit');
         if (!depositField.value || depositField.value === '0') {
           depositField.value = net > 0 ? Math.round(net * 0.40) : '';
         }
-        const dep = parseFloat(document.getElementById('lipaDeposit').value) || 0;
+        const dep = parseFloat(depositField.value) || 0;
         document.getElementById('sumDeposit').textContent = formatKES(dep);
       }
 
-      const finalAmount = Math.max(0, selling - discount);
-      const profit = finalAmount - cost;
-
-      document.getElementById('sumSellingPrice').textContent = formatKES(selling);
-      document.getElementById('sumDiscount').textContent = `- ${formatKES(discount)}`;
+      document.getElementById('sumSellingPrice').textContent = formatKES(totalSelling);
+      document.getElementById('sumDiscount').textContent = `- ${formatKES(totalDiscount)}`;
       document.getElementById('sumProfit').textContent = formatKES(profit);
       document.getElementById('sumProfit').style.color = profit >= 0 ? '#10b981' : '#ef4444';
       document.getElementById('sumTotalPayable').textContent = formatKES(finalAmount);
@@ -1643,28 +1704,26 @@
     }
 
     /**
-     * SUBMIT NEW SALE TRANSACTION
+     * SUBMIT NEW SALE TRANSACTION (multi-item cart)
      */
     async function handleSaleSubmit(e) {
       e.preventDefault();
 
-      if (!selectedItem) {
-        showToast('Please search and select a garment from inventory first', 'error');
+      if (cart.length === 0) {
+        showToast('Please add at least one item to the cart first', 'error');
         document.getElementById('productSearchInput').focus();
         return;
       }
 
-      const customerName = document.getElementById('customerName').value.trim();
+      const customerName  = document.getElementById('customerName').value.trim();
       const customerPhone = document.getElementById('customerPhone').value.trim();
       const customerCounty = document.getElementById('customerCounty').value.trim();
-      const platform = document.getElementById('platform').value;
-      const salesperson = document.getElementById('salesperson').value;
+      const platform      = document.getElementById('platform').value;
+      const salesperson   = document.getElementById('salesperson').value;
       const paymentMethod = document.getElementById('paymentMethod').value;
       const deliveryMethod = document.getElementById('deliveryMethod').value;
-      const sellingPrice = parseFloat(document.getElementById('sellingPrice').value) || 0;
-      const discount = parseFloat(document.getElementById('discount').value) || 0;
-      const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
-      const notes = document.getElementById('notes').value.trim();
+      const notes         = document.getElementById('notes').value.trim();
+      const isLipaSale    = paymentMethod === 'Lipa Polepole';
 
       if (!customerName) {
         showToast('Please enter customer name', 'error');
@@ -1672,23 +1731,17 @@
         return;
       }
 
-      if (sellingPrice <= 0) {
-        showToast('Selling price must be greater than 0', 'error');
-        document.getElementById('sellingPrice').focus();
+      if (isLipaSale && cart.length > 1) {
+        showToast('Lipa Polepole is only available for single-item purchases. Remove extra items from cart.', 'error');
         return;
       }
 
-      const btn = document.getElementById('btnSubmitSale');
-      const spinner = document.getElementById('btnSpinner');
-      const btnText = document.getElementById('btnSubmitText');
-
-      const isLipaSale = paymentMethod === 'Lipa Polepole';
-
-      // Extra validation for Lipa Polepole
+      // Lipa Polepole-specific validation
       if (isLipaSale) {
+        const entry    = cart[0];
+        const netPrice = Math.max(0, entry.sellingPrice - entry.discount);
         const lipaDeposit = parseFloat(document.getElementById('lipaDeposit').value) || 0;
         const lipaDueDate = document.getElementById('lipaDueDate').value;
-        const netPrice = Math.max(0, sellingPrice - discount);
         if (lipaDeposit <= 0) {
           showToast('Please enter the deposit amount for the instalment plan', 'error');
           document.getElementById('lipaDeposit').focus();
@@ -1706,219 +1759,173 @@
         }
       }
 
+      const btn     = document.getElementById('btnSubmitSale');
+      const spinner = document.getElementById('btnSpinner');
+      const btnText = document.getElementById('btnSubmitText');
+
       btn.disabled = true;
       spinner.style.display = 'inline-block';
-      btnText.textContent = isLipaSale ? 'Creating Plan...' : 'Processing Sale...';
+      btnText.textContent = isLipaSale ? 'Creating Plan...' : `Processing ${cart.length} item${cart.length > 1 ? 's' : ''}...`;
 
       try {
-        const existingInvoices = salesRecords.map(s => s.invoice_number);
-        const invoiceNumber = generateNextInvoiceNumber(existingInvoices);
         const todayIso = new Date().toISOString();
 
-        // Safe resolution for customer_id foreign key constraint pointing to customers.customer_id
+        // ── 1. Resolve / create customer record (once per checkout) ──
         let resolvedCustomerId = null;
         if (supabaseClient) {
           try {
-            // Check if customer already exists in customers table
-            let query = supabaseClient.from('customers').select('customer_id');
-            if (customerPhone) {
-              query = query.eq('phone', customerPhone);
+            let q = supabaseClient.from('customers').select('customer_id');
+            q = customerPhone ? q.eq('phone', customerPhone) : q.eq('name', customerName);
+            const { data: found, error: findErr } = await q.limit(1);
+            if (!findErr && found && found.length > 0) {
+              resolvedCustomerId = found[0].customer_id;
             } else {
-              query = query.eq('name', customerName);
-            }
-            const { data: foundCust, error: findErr } = await query.limit(1);
-
-            if (!findErr && foundCust && foundCust.length > 0) {
-              resolvedCustomerId = foundCust[0].customer_id;
-            } else {
-              // Generate customer_id and insert customer record
-              const newCustId = 'CUST-' + (customerPhone ? customerPhone.replace(/\D/g, '').slice(-6) : Date.now().toString().slice(-6));
-              const { data: createdCust, error: createErr } = await supabaseClient
+              const newCustId = 'CUST-' + (customerPhone
+                ? customerPhone.replace(/\D/g, '').slice(-6)
+                : Date.now().toString().slice(-6));
+              const { data: created } = await supabaseClient
                 .from('customers')
-                .insert([{
-                  customer_id: newCustId,
-                  name: customerName,
-                  phone: customerPhone || null,
-                  county: customerCounty || null,
-                  created_at: todayIso
-                }])
+                .insert([{ customer_id: newCustId, name: customerName, phone: customerPhone || null, county: customerCounty || null, created_at: todayIso }])
                 .select('customer_id');
-
-              if (!createErr && createdCust && createdCust.length > 0) {
-                resolvedCustomerId = createdCust[0].customer_id;
-              } else {
-                resolvedCustomerId = newCustId;
-              }
+              resolvedCustomerId = (created && created[0]) ? created[0].customer_id : newCustId;
             }
-          } catch (e) {
-            console.warn('Customer table check:', e);
-          }
+          } catch (e) { console.warn('Customer lookup:', e); }
+        }
+
+        // ── 2. Loop cart — one sale record per item ──
+        const issuedInvoices   = [];
+        const batchRecords     = [];
+        const lipaDepositAmt   = isLipaSale ? (parseFloat(document.getElementById('lipaDeposit').value) || 0) : null;
+
+        for (let i = 0; i < cart.length; i++) {
+          const entry = cart[i];
+          const item  = entry.item;
+
+          // Consecutive invoice numbers within batch
+          const allInvoices   = [...salesRecords.map(s => s.invoice_number), ...issuedInvoices];
+          const invoiceNumber = generateNextInvoiceNumber(allInvoices);
+          issuedInvoices.push(invoiceNumber);
 
           // Ensure product exists in inventory table
-          try {
-            const { data: prodCheck } = await supabaseClient
-              .from('inventory')
-              .select('product_id')
-              .eq('product_id', selectedItem.product_id)
-              .limit(1);
-
-            if (!prodCheck || prodCheck.length === 0) {
-              await supabaseClient.from('inventory').insert([{
-                product_id: selectedItem.product_id,
-                print_description: selectedItem.print_description,
-                cost_price: selectedItem.cost_price,
-                selling_price: selectedItem.selling_price,
-                total_qty_stocked: Math.max(1, Number(selectedItem.total_qty_stocked) || 1)
-              }]);
-            }
-          } catch (e) {
-            console.warn('Inventory check error:', e);
+          if (supabaseClient) {
+            try {
+              const { data: prodCheck } = await supabaseClient.from('inventory').select('product_id').eq('product_id', item.product_id).limit(1);
+              if (!prodCheck || prodCheck.length === 0) {
+                await supabaseClient.from('inventory').insert([{
+                  product_id: item.product_id,
+                  print_description: item.print_description,
+                  cost_price: item.cost_price,
+                  selling_price: item.selling_price,
+                  total_qty_stocked: Math.max(1, Number(item.total_qty_stocked) || 1)
+                }]);
+              }
+            } catch (e) { console.warn('Inventory check:', e); }
           }
+
+          const noteStr = isLipaSale
+            ? `LP Plan: [PLAN_ID_PLACEHOLDER] | Full price: KES ${entry.sellingPrice}${entry.discount>0?' (disc KES '+entry.discount+')':''} | Deposit: KES ${lipaDepositAmt}${customerPhone?' | Phone: '+customerPhone:''}${notes?' | '+notes:''}`
+            : (notes ? (customerPhone ? `Phone: ${customerPhone} | ${notes}` : notes) : (customerPhone ? `Phone: ${customerPhone}` : null));
+
+          const saleRecord = {
+            invoice_number: invoiceNumber,
+            sale_date:      todayIso,
+            customer_id:    resolvedCustomerId || null,
+            customer_name:  customerName,
+            product_id:     item.product_id,
+            print_name:     item.print_description,
+            platform:       platform,
+            payment_method: isLipaSale ? 'Lipa Polepole - Deposit' : paymentMethod,
+            selling_price:  isLipaSale ? lipaDepositAmt : entry.sellingPrice,
+            discount:       isLipaSale ? 0 : entry.discount,
+            cost_price:     Number(item.cost_price) || 0,
+            supplier:       item.supplier || null,
+            salesperson:    salesperson,
+            delivery_method: deliveryMethod,
+            notes:          noteStr
+          };
+
+          // Insert sale record
+          if (supabaseClient) {
+            const { error: saleErr } = await supabaseClient.from('sales').insert([saleRecord]);
+            if (saleErr) {
+              console.error('Sale insert error:', saleErr);
+              showToast(`Save error for item ${i + 1}: ${saleErr.message}`, 'error');
+            }
+
+            if (isLipaSale) {
+              // Reserve — do NOT decrement stock
+              const currentReserved = Number(item.reserved_qty) || 0;
+              const { error: resErr } = await supabaseClient.from('inventory').update({ reserved_qty: currentReserved + 1 }).eq('product_id', item.product_id);
+              if (resErr) console.warn('Could not set reserved_qty:', resErr.message);
+            } else {
+              // Decrement stock
+              const currentQty = Number(item.total_qty_stocked) || 1;
+              const newQty     = Math.max(0, currentQty - 1);
+              const payload    = { total_qty_stocked: newQty };
+              if (newQty === 0) payload.status = 'Sold Out';
+              const { error: invErr } = await supabaseClient.from('inventory').update(payload).eq('product_id', item.product_id);
+              if (invErr) {
+                await supabaseClient.from('inventory').update({ quantity_stocked: newQty, ...(newQty === 0 ? { status: 'Sold Out' } : {}) }).eq('product_id', item.product_id);
+              }
+              item.total_qty_stocked = newQty;
+              if (newQty === 0) item.status = 'Sold Out';
+            }
+          }
+
+          batchRecords.push(saleRecord);
+          salesRecords.unshift(saleRecord);
         }
 
-        // For Lipa Polepole sales, we record the DEPOSIT AMOUNT as selling_price
-        // (not the full plan price). Each future instalment also writes its own sales row
-        // from lipa.html, so dashboard revenue = sum of actual cash received.
-        const lipaDepositAmt = isLipaSale
-          ? (parseFloat(document.getElementById('lipaDeposit').value) || 0)
-          : null;
-
-        // Exact sales table schema as specified by user:
-        // invoice_number, sale_date, customer_id, customer_name, product_id,
-        // print_name, platform, payment_method, selling_price, discount,
-        // cost_price, salesperson, delivery_method, notes
-        const saleRecord = {
-          invoice_number: invoiceNumber,
-          sale_date: todayIso,
-          customer_id: resolvedCustomerId || null,
-          customer_name: customerName,
-          product_id: selectedItem.product_id,
-          print_name: selectedItem.print_description,
-          platform: platform,
-          payment_method: isLipaSale ? 'Lipa Polepole - Deposit' : paymentMethod,
-          selling_price: isLipaSale ? lipaDepositAmt : sellingPrice,
-          discount: isLipaSale ? 0 : discount,    // discount is tracked on the plan, not the deposit row
-          cost_price: costPrice,
-          supplier: selectedItem.supplier || null,
-          salesperson: salesperson,
-          delivery_method: deliveryMethod,
-          notes: isLipaSale
-            ? `LP Plan: [PLAN_ID_PLACEHOLDER] | Full price: KES ${sellingPrice}${discount>0?' (disc KES '+discount+')':''} | Deposit: KES ${lipaDepositAmt}${customerPhone?' | Phone: '+customerPhone:''}${notes?' | '+notes:''}`
-            : (notes ? (customerPhone ? `Phone: ${customerPhone} | ${notes}` : notes) : (customerPhone ? `Phone: ${customerPhone}` : null))
-        };
-
-        // 1. Insert into Supabase 'sales' table
-        let saleSavedToSupabase = false;
-        if (supabaseClient) {
-          const { error: saleErr } = await supabaseClient
-            .from('sales')
-            .insert([saleRecord]);
-
-          if (saleErr) {
-            console.error('Supabase sales insert error:', saleErr);
-            showToast('Note: Sales table insert error (' + saleErr.message + '). Saved locally.', 'error');
-          } else {
-            saleSavedToSupabase = true;
-          }
-
-          if (isLipaSale) {
-            // ── LIPA POLEPOLE: Reserve the item, do NOT decrement stock ──
-            // Increment reserved_qty (requires: ALTER TABLE inventory ADD COLUMN IF NOT EXISTS reserved_qty int default 0)
-            const currentReserved = Number(selectedItem.reserved_qty) || 0;
-            const { error: resErr } = await supabaseClient
-              .from('inventory')
-              .update({ reserved_qty: currentReserved + 1 })
-              .eq('product_id', selectedItem.product_id);
-            if (resErr) {
-              console.warn('Could not set reserved_qty (column may not exist yet):', resErr.message);
-            }
-
-            // Create the Lipa Polepole plan record
-            const lipaDeposit = parseFloat(document.getElementById('lipaDeposit').value) || 0;
-            const lipaDueDate = document.getElementById('lipaDueDate').value;
-            const planId = await generateNextLipaPlanId();
-            const todayDate = new Date().toISOString().split('T')[0];
-
-            // Patch the plan_id into the sales record notes now that we know it
-            saleRecord.notes = (saleRecord.notes || '').replace('PLAN_ID_PLACEHOLDER', planId);
-
-            const planRecord = {
-              plan_id: planId,
-              customer_id: resolvedCustomerId || null,
-              customer_name: customerName,
-              phone: customerPhone || null,
-              reserved_product_id: selectedItem.product_id,
-              print_name: selectedItem.print_description,
-              price: sellingPrice,
-              discount: discount,
-              deposit_paid: lipaDeposit,
-              start_date: todayDate,
-              due_date: lipaDueDate,
-              status: 'Active',
-              collection_status: 'Reserved',
-              reservation_tag: 'RES-' + planId,
-              notes: notes || null
-            };
-
-            const { error: planErr } = await supabaseClient
-              .from('lipa_polepole_plans')
-              .insert([planRecord]);
-
-            if (planErr) {
-              console.error('Lipa plan insert error:', planErr);
-              showToast('Warning: Plan record not saved (' + planErr.message + '). Check Supabase.', 'error');
-            }
-            // NOTE: deposit is NOT inserted into lipa_polepole_payments.
-            // It lives on lipa_polepole_plans.deposit_paid and in the sales table.
-            // lipa_polepole_payments holds only subsequent instalment payments.
-
-          } else {
-            // ── REGULAR SALE: Decrement total_qty_stocked by 1 ──
-            const currentQty = Number(selectedItem.total_qty_stocked) || 1;
-            const newQty = Math.max(0, currentQty - 1);
-            const updatePayload = { total_qty_stocked: newQty };
-            if (newQty === 0) { updatePayload.status = 'Sold Out'; }
-
-            const { error: invErr } = await supabaseClient
-              .from('inventory')
-              .update(updatePayload)
-              .eq('product_id', selectedItem.product_id);
-
-            if (invErr) {
-              await supabaseClient
-                .from('inventory')
-                .update({ quantity_stocked: newQty, ...(newQty === 0 ? { status: 'Sold Out' } : {}) })
-                .eq('product_id', selectedItem.product_id);
-            }
-
-            // Decrement local inventory
-            selectedItem.total_qty_stocked = Math.max(0, (Number(selectedItem.total_qty_stocked) || 1) - 1);
-            if (selectedItem.total_qty_stocked === 0) { selectedItem.status = 'Sold Out'; }
-            saveLocalInventory();
-          }
-        }
-
-        // Update local memory & storage
-        salesRecords.unshift(saleRecord);
         saveLocalSales();
+        saveLocalInventory();
 
-        if (isLipaSale) {
+        // ── 3. Lipa Polepole plan (single-item only) ──
+        if (isLipaSale && supabaseClient) {
+          const entry       = cart[0];
           const lipaDeposit = parseFloat(document.getElementById('lipaDeposit').value) || 0;
-          const netPrice = Math.max(0, sellingPrice - discount);
-          const balance = Math.max(0, netPrice - lipaDeposit);
+          const lipaDueDate = document.getElementById('lipaDueDate').value;
+          const planId      = await generateNextLipaPlanId();
+
+          batchRecords[0].notes = (batchRecords[0].notes || '').replace('PLAN_ID_PLACEHOLDER', planId);
+
+          const planRecord = {
+            plan_id:              planId,
+            customer_id:          resolvedCustomerId || null,
+            customer_name:        customerName,
+            phone:                customerPhone || null,
+            reserved_product_id:  entry.item.product_id,
+            print_name:           entry.item.print_description,
+            price:                entry.sellingPrice,
+            discount:             entry.discount,
+            deposit_paid:         lipaDeposit,
+            start_date:           todayIso.split('T')[0],
+            due_date:             lipaDueDate,
+            status:               'Active',
+            collection_status:    'Reserved',
+            reservation_tag:      'RES-' + planId,
+            notes:                notes || null
+          };
+          const { error: planErr } = await supabaseClient.from('lipa_polepole_plans').insert([planRecord]);
+          if (planErr) {
+            console.error('Lipa plan insert error:', planErr);
+            showToast('Warning: Plan not saved (' + planErr.message + ')', 'error');
+          }
+
+          const netPrice = Math.max(0, entry.sellingPrice - entry.discount);
+          const balance  = Math.max(0, netPrice - lipaDeposit);
           showToast(`Plan created! Deposit KES ${lipaDeposit.toLocaleString()} received. Balance KES ${balance.toLocaleString()} due.`, 'success');
         } else {
-          showToast(`Sale recorded successfully! Invoice ${invoiceNumber}`, 'success');
+          const totalNet = batchRecords.reduce((s, r) => s + Math.max(0, (Number(r.selling_price)||0) - (Number(r.discount)||0)), 0);
+          const count    = batchRecords.length;
+          showToast(`${count} item${count>1?'s':''} sold! Total ${formatKES(totalNet)}. Invoice${count>1?'s':''}: ${batchRecords.map(r=>r.invoice_number).join(', ')}`, 'success');
         }
 
-        // Show receipt modal
-        showReceipt(saleRecord);
+        // Show receipt for the whole batch
+        showReceipt(batchRecords, customerPhone);
 
-        // Reset form
+        // ── 4. Reset form & cart ──
         document.getElementById('posForm').reset();
-        clearSelectedProduct();
-        document.getElementById('discount').value = '0';
-        // Reset Lipa panel (if it was open, hide it and clear its fields)
+        clearCart();
         document.getElementById('lipaPanel').classList.remove('visible');
         document.getElementById('lipaDeposit').value = '';
         document.getElementById('lipaDueDate').value = '';
@@ -1926,8 +1933,6 @@
         document.getElementById('sumTotalLabel').textContent = 'Net Total Payable:';
         updatePricingSummary();
         updateNextInvoiceBadge();
-
-        // Refresh tables
         renderSalesTable();
         updateStats();
 
@@ -1937,11 +1942,8 @@
       } finally {
         btn.disabled = false;
         spinner.style.display = 'none';
-        // Restore button label based on current payment method
         const currentMethod = document.getElementById('paymentMethod').value;
-        btnText.textContent = currentMethod === 'Lipa Polepole'
-          ? '💜 Reserve & Create Plan'
-          : '✅ Complete Sale & Record';
+        btnText.textContent = currentMethod === 'Lipa Polepole' ? '💜 Reserve & Create Plan' : '✅ Complete Sale & Record';
       }
     }
 
@@ -2079,42 +2081,55 @@
     }
 
     /**
-     * RECEIPT MODAL
+     * RECEIPT MODAL — accepts an array of sale records (or a single record for backward compat)
      */
-    function showReceipt(record) {
-      if (!record) return;
+    function showReceipt(records, customerPhone) {
+      if (!records) return;
+      if (!Array.isArray(records)) records = [records];
+      if (records.length === 0) return;
+      const first = records[0];
 
-      const netPaid = Math.max(0, (Number(record.selling_price) || 0) - (Number(record.discount) || 0));
+      const totalNet = records.reduce((sum, r) =>
+        sum + Math.max(0, (Number(r.selling_price) || 0) - (Number(r.discount) || 0)), 0);
 
-      document.getElementById('recInvoice').textContent = record.invoice_number;
-      document.getElementById('recDate').textContent = record.sale_date ? new Date(record.sale_date).toLocaleString() : new Date().toLocaleString();
-      document.getElementById('recCustomer').textContent = record.customer_name;
-      document.getElementById('recPhone').textContent = record.customer_id || '—';
-      document.getElementById('recPlatform').textContent = record.platform;
-      document.getElementById('recSalesperson').textContent = record.salesperson || 'Anna';
+      document.getElementById('recInvoice').textContent = records.length === 1
+        ? first.invoice_number
+        : `${first.invoice_number} + ${records.length - 1} more`;
+      document.getElementById('recDate').textContent = first.sale_date
+        ? new Date(first.sale_date).toLocaleString() : new Date().toLocaleString();
+      document.getElementById('recCustomer').textContent = first.customer_name || '—';
+      document.getElementById('recPhone').textContent = customerPhone || first.customer_id || '—';
+      document.getElementById('recPlatform').textContent = first.platform || '—';
+      document.getElementById('recSalesperson').textContent = first.salesperson || 'Anna';
 
-      document.getElementById('recPrint').textContent = `${record.print_name} (${record.product_id})`;
-      document.getElementById('recOriginalPrice').textContent = formatKES(record.selling_price);
+      // Build items list
+      document.getElementById('recItemsList').innerHTML = records.map(r => {
+        const price = Number(r.selling_price) || 0;
+        const disc  = Number(r.discount) || 0;
+        return `
+          <div class="receipt-item-row" style="font-weight:600;color:#fff;font-size:0.78rem;align-items:flex-start;margin-bottom:2px;">
+            <span style="max-width:65%;line-height:1.3;">${escapeHtml(r.print_name || 'Garment')}
+              <span style="font-size:0.65rem;color:#888;font-weight:400;display:block;">${escapeHtml(r.product_id || '')}</span>
+            </span>
+            <span>${formatKES(price)}</span>
+          </div>
+          ${disc > 0 ? `<div class="receipt-item-row" style="color:#ef4444;font-size:0.74rem;margin-bottom:6px;padding-left:8px;">
+            <span>Discount</span><span>- ${formatKES(disc)}</span>
+          </div>` : '<div style="margin-bottom:6px;"></div>'}
+        `;
+      }).join('');
 
-      const discRow = document.getElementById('recDiscountRow');
-      if (record.discount > 0) {
-        discRow.style.display = 'flex';
-        document.getElementById('recDiscount').textContent = `- ${formatKES(record.discount)}`;
-      } else {
-        discRow.style.display = 'none';
-      }
-
-      document.getElementById('recTotalPaid').textContent = formatKES(netPaid);
-      document.getElementById('recPayment').textContent = record.payment_method;
-      document.getElementById('recDelivery').textContent = record.delivery_method;
-      document.getElementById('recNotes').textContent = record.notes ? `Note: ${record.notes}` : '';
+      document.getElementById('recTotalPaid').textContent = formatKES(totalNet);
+      document.getElementById('recPayment').textContent = first.payment_method || '—';
+      document.getElementById('recDelivery').textContent = first.delivery_method || '—';
+      document.getElementById('recNotes').textContent = first.notes ? `Note: ${first.notes}` : '';
 
       document.getElementById('receiptModal').style.display = 'flex';
     }
 
     window.showReceiptByInvoice = function(invNum) {
       const record = salesRecords.find(s => s.invoice_number === invNum);
-      if (record) showReceipt(record);
+      if (record) showReceipt([record], '');
     };
 
     /**
@@ -2195,8 +2210,6 @@
 
       // Form listeners
       document.getElementById('posForm').addEventListener('submit', handleSaleSubmit);
-      document.getElementById('sellingPrice').addEventListener('input', updatePricingSummary);
-      document.getElementById('discount').addEventListener('input', updatePricingSummary);
 
       // Filter buttons
       const btnToday = document.getElementById('btnFilterToday');
