@@ -514,6 +514,27 @@
   // ─────────────────────────────────────────
   // INIT
   // ─────────────────────────────────────────
+  // ─────────────────────────────────────────
+  // KEEP-ALIVE: prevents Supabase free-tier auto-pause
+  // Fires a lightweight ping at most once every 24 hours.
+  // ─────────────────────────────────────────
+  function keepAlive(client) {
+    const KEY = 'hoa_sb_ping';
+    try {
+      const last = parseInt(localStorage.getItem(KEY) || '0', 10);
+      const now  = Date.now();
+      if (now - last < 86400000) return; // already pinged within 24 h
+      client
+        .from('inventory')
+        .select('product_id', { count: 'exact', head: true })
+        .limit(1)
+        .then(() => {
+          try { localStorage.setItem(KEY, String(now)); } catch (_) {}
+        })
+        .catch(() => {}); // silent — never surfaces to the user
+    } catch (_) {}
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
     try {
       if (!window.supabase || typeof window.supabase.createClient !== 'function') {
@@ -521,6 +542,7 @@
       }
       sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       await loadAll();
+      keepAlive(sbClient);
     } catch(e) {
       console.error('Dashboard init error:', e);
       setConn(false);
